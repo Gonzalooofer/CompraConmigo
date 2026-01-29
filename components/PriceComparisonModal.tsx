@@ -1,7 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { X, TrendingDown, Store, AlertCircle, Loader2, ExternalLink } from 'lucide-react';
-import { comparePrices } from '../services/geminiService';
+import { X, Store, AlertCircle, Loader2, ExternalLink } from 'lucide-react';
 import { PriceComparisonResult } from '../types';
 
 interface PriceComparisonModalProps {
@@ -14,17 +13,23 @@ export const PriceComparisonModal: React.FC<PriceComparisonModalProps> = ({ prod
   const [data, setData] = useState<PriceComparisonResult | null>(null);
 
   useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const result = await comparePrices(productName);
-        setData(result);
-      } catch (err) {
-        console.error(err);
-      } finally {
+    // Simulamos una carga de datos locales para evitar la API de Gemini
+    const fetchMockData = () => {
+      setTimeout(() => {
+        const mockResult: PriceComparisonResult = {
+          product: productName,
+          comparisons: [
+            { store: 'Mercadona', price: Math.random() * (5 - 1) + 1, note: 'Precio habitual' },
+            { store: 'Carrefour', price: Math.random() * (5 - 1) + 1, note: 'Descuento en 2ª unidad' },
+            { store: 'Lidl', price: Math.random() * (5 - 1) + 1, note: 'Oferta de fin de semana' },
+            { store: 'Dia', price: Math.random() * (5 - 1) + 1, note: 'Cupón disponible en app' }
+          ]
+        };
+        setData(mockResult);
         setLoading(false);
-      }
+      }, 1200);
     };
-    fetchData();
+    fetchMockData();
   }, [productName]);
 
   const bestPrice = data?.comparisons.reduce((prev, curr) => prev.price < curr.price ? prev : curr);
@@ -51,7 +56,7 @@ export const PriceComparisonModal: React.FC<PriceComparisonModalProps> = ({ prod
           {loading ? (
             <div className="py-12 flex flex-col items-center justify-center space-y-4">
               <Loader2 className="animate-spin text-emerald-500" size={32} />
-              <p className="text-slate-500 text-sm animate-pulse">Consultando precios en vivo...</p>
+              <p className="text-slate-500 text-sm animate-pulse">Buscando mejores precios...</p>
             </div>
           ) : data ? (
             <div className="space-y-4">
@@ -75,12 +80,11 @@ export const PriceComparisonModal: React.FC<PriceComparisonModalProps> = ({ prod
                         {item.price.toFixed(2)}€
                       </p>
                       {item === bestPrice && (
-                        <span className="text-[10px] font-bold bg-emerald-600 text-white px-2 py-0.5 rounded-full uppercase">Mejor Opción</span>
+                        <span className="text-[10px] font-bold bg-emerald-600 text-white px-2 py-0.5 rounded-full uppercase">Mejor Precio</span>
                       )}
                     </div>
                   </div>
                   
-                  {/* Action Button */}
                   <a 
                     href={getSearchUrl(item.store, productName)} 
                     target="_blank" 
@@ -100,12 +104,12 @@ export const PriceComparisonModal: React.FC<PriceComparisonModalProps> = ({ prod
               <div className="mt-6 p-4 bg-amber-50 dark:bg-amber-900/20 rounded-xl flex items-start space-x-3 border border-amber-100 dark:border-amber-900/30">
                 <AlertCircle className="text-amber-500 shrink-0" size={18} />
                 <p className="text-xs text-amber-600 dark:text-amber-500 leading-relaxed">
-                  Los precios son estimaciones basadas en datos históricos y IA. Verifica el precio final en la web del supermercado.
+                  Estos precios son comparativas estimadas. Revisa la web oficial para confirmar el precio exacto de hoy.
                 </p>
               </div>
             </div>
           ) : (
-            <p className="text-center text-slate-500">No pudimos obtener datos en este momento.</p>
+            <p className="text-center text-slate-500">No hay datos disponibles.</p>
           )}
         </div>
       </div>
