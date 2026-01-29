@@ -17,8 +17,6 @@ export interface User {
   avatar: string;
   color: string;
   email?: string;
-  phoneNumber?: string; // Nuevo para Bizum
-  plan?: 'free' | 'premium' | 'family'; // Nuevo plan
 }
 
 export interface Group {
@@ -30,14 +28,11 @@ export interface Group {
   color: string;
 }
 
-// Nuevo: Para registrar pagos realizados y saldar deudas
-export interface Settlement {
-  id: string;
-  fromUserId: string;
-  toUserId: string;
-  amount: number;
-  timestamp: number;
-  groupId: string;
+export interface ExpenseSummary {
+  userId: string;
+  totalSpent: number;
+  shouldPay: number;
+  balance: number; 
 }
 
 export enum AppView {

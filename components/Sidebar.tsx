@@ -18,7 +18,6 @@ interface SidebarProps {
   isDarkMode: boolean;
   onToggleTheme: () => void;
   onUpdateUser: (userId: string, data: Partial<User>) => void;
-  onDeleteAccount: () => void;
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({
@@ -33,8 +32,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   onLogin,
   isDarkMode,
   onToggleTheme,
-  onUpdateUser,
-  onDeleteAccount
+  onUpdateUser
 }) => {
   const [showSettings, setShowSettings] = useState(false);
   const [showProfileEdit, setShowProfileEdit] = useState(false);
@@ -152,15 +150,11 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
       </div>
 
-      {showSettings && currentUser && (
+      {showSettings && (
         <SettingsModal 
           onClose={() => setShowSettings(false)}
           isDarkMode={isDarkMode}
           onToggleTheme={onToggleTheme}
-          currentUser={currentUser}
-          onUpdateUser={onUpdateUser}
-          onLogout={onLogout}
-          onDeleteAccount={onDeleteAccount}
         />
       )}
 

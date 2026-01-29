@@ -8,7 +8,7 @@ import { AuthModal } from './components/AuthModal';
 import { Sidebar } from './components/Sidebar';
 import { NewGroupModal } from './components/NewGroupModal';
 import { GroupSettingsModal } from './components/GroupSettingsModal';
-import { AppView, ProductItem, User, Group, Settlement } from './types';
+import { AppView, ProductItem, User, Group } from './types';
 import { MOCK_USERS, MOCK_GROUPS, INITIAL_ITEMS } from './constants';
 import { Menu, Settings2 } from 'lucide-react';
 import { v4 as uuidv4 } from 'uuid';
@@ -31,9 +31,6 @@ const App: React.FC = () => {
   
   const [users, setUsers] = useState<User[]>(MOCK_USERS);
   const [groups, setGroups] = useState<Group[]>(MOCK_GROUPS);
-  
-  // Settlements State (Pagos realizados)
-  const [settlements, setSettlements] = useState<Settlement[]>([]);
   
   // Auth State
   const [currentUser, setCurrentUser] = useState<User | null>(null);
@@ -66,11 +63,6 @@ const App: React.FC = () => {
   // Derived state: Filter items for the current group
   const groupItems = currentGroup 
     ? items.filter(item => item.groupId === currentGroup.id) 
-    : [];
-    
-  // Filter settlements for current group
-  const groupSettlements = currentGroup
-    ? settlements.filter(s => s.groupId === currentGroup.id)
     : [];
 
   // Handle URL Invitations
@@ -127,8 +119,7 @@ const App: React.FC = () => {
         name: name,
         email: `${name.toLowerCase().replace(/\s/g, '')}@ejemplo.com`, // Dummy email generator
         avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${name}`,
-        color: 'bg-purple-500',
-        plan: 'free'
+        color: 'bg-purple-500'
       };
       setUsers(prev => [...prev, user!]);
     }
@@ -169,23 +160,6 @@ const App: React.FC = () => {
     setCurrentUser(null);
     setCurrentGroup(null);
     setShowSidebar(false);
-  };
-  
-  const handleDeleteAccount = () => {
-    if(!currentUser) return;
-    if (confirm("¿Estás seguro de que quieres eliminar tu cuenta? Esta acción es irreversible.")) {
-      // Remove user from all groups
-      setGroups(prev => prev.map(g => ({
-        ...g,
-        members: g.members.filter(id => id !== currentUser.id),
-        admins: g.admins.filter(id => id !== currentUser.id)
-      })).filter(g => g.members.length > 0)); // Remove empty groups if necessary, or keep them
-
-      // Remove user from users list
-      setUsers(prev => prev.filter(u => u.id !== currentUser.id));
-
-      handleLogout();
-    }
   };
 
   const handleAddItems = (newItems: ProductItem[]) => {
@@ -315,8 +289,7 @@ const App: React.FC = () => {
       id: newUserId,
       name: name,
       avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${name}${newUserId}`,
-      color: 'bg-slate-500', // Default color
-      plan: 'free'
+      color: 'bg-slate-500' // Default color
     };
 
     // Add user to global state
@@ -338,19 +311,6 @@ const App: React.FC = () => {
       } : null);
     }
   };
-  
-  const handleSettleDebt = (fromId: string, toId: string, amount: number) => {
-    if (!currentGroup) return;
-    const newSettlement: Settlement = {
-      id: uuidv4(),
-      fromUserId: fromId,
-      toUserId: toId,
-      amount: amount,
-      timestamp: Date.now(),
-      groupId: currentGroup.id
-    };
-    setSettlements(prev => [...prev, newSettlement]);
-  };
 
 
   // --- RENDER ---
@@ -369,6 +329,8 @@ const App: React.FC = () => {
   }
 
   // 2. Main App (Authenticated)
+  // If user has no groups (deleted all), create a new default one or show a "Create Group" screen.
+  // For simplicity, if currentGroup is null but user is logged in, show sidebar or prompt.
   if (!currentGroup && userGroups.length > 0) {
     setCurrentGroup(userGroups[0]);
     return null; 
@@ -391,13 +353,6 @@ const App: React.FC = () => {
                 onCreate={handleCreateGroup}
               />
             )}
-            
-             <button 
-               onClick={handleLogout}
-               className="mt-6 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 text-sm"
-             >
-               Cerrar Sesión
-             </button>
         </div>
      )
   }
@@ -459,9 +414,6 @@ const App: React.FC = () => {
           <ExpenseSplitter 
             items={groupItems} 
             users={users.filter(u => currentGroup.members.includes(u.id))} 
-            currentUser={currentUser}
-            settlements={groupSettlements}
-            onSettleDebt={handleSettleDebt}
           />
         )}
       </main>
@@ -489,7 +441,6 @@ const App: React.FC = () => {
         isDarkMode={darkMode}
         onToggleTheme={() => setDarkMode(!darkMode)}
         onUpdateUser={handleUpdateUser}
-        onDeleteAccount={handleDeleteAccount}
       />
 
       {showNewGroupModal && (

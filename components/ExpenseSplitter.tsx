@@ -1,24 +1,15 @@
 
 import React, { useMemo } from 'react';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from 'recharts';
-import { ProductItem, User, Settlement } from '../types';
-import { ArrowRight, Wallet, CheckCircle2, Phone, CreditCard, ExternalLink } from 'lucide-react';
+import { ProductItem, User } from '../types';
+import { ArrowRight, Wallet, CheckCircle2 } from 'lucide-react';
 
 interface ExpenseSplitterProps {
   items: ProductItem[];
   users: User[];
-  currentUser: User;
-  settlements: Settlement[];
-  onSettleDebt: (fromId: string, toId: string, amount: number) => void;
 }
 
-export const ExpenseSplitter: React.FC<ExpenseSplitterProps> = ({ 
-  items, 
-  users, 
-  currentUser,
-  settlements,
-  onSettleDebt 
-}) => {
+export const ExpenseSplitter: React.FC<ExpenseSplitterProps> = ({ items, users }) => {
   // Only calculate for checked items (items actually bought)
   const boughtItems = items.filter(item => item.checked);
   const totalSpent = boughtItems.reduce((acc, item) => acc + (item.estimatedPrice * item.quantity), 0);
@@ -26,6 +17,10 @@ export const ExpenseSplitter: React.FC<ExpenseSplitterProps> = ({
   // 1. Calculate individual spending
   const userExpenses = useMemo(() => users.map(user => {
     let personalTotal = 0;
+    
+    // Logic: 
+    // If assigned to user -> user pays full price.
+    // If unassigned -> cost is split among all group members.
     
     boughtItems.forEach(item => {
       const itemCost = item.estimatedPrice * item.quantity;
@@ -41,33 +36,26 @@ export const ExpenseSplitter: React.FC<ExpenseSplitterProps> = ({
       name: user.name,
       value: personalTotal,
       color: user.color.replace('bg-', 'text-'),
-      avatar: user.avatar,
-      phoneNumber: user.phoneNumber
+      avatar: user.avatar
     };
   }), [users, boughtItems]);
 
-  const myExpense = userExpenses.find(u => u.id === currentUser.id)?.value || 0;
-
   // 2. Calculate Debts (Who owes whom)
+  // Assumption: The goal is for everyone to contribute equally to the total pot (fair share), 
+  // adjusted by what they actually paid.
+  // Note: For a more complex model where specific items are assigned to specific people and *only* they pay for it,
+  // the logic is different. Here we assume "Expense Splitter" means "Equalizing the load".
+  
   const debts = useMemo(() => {
     if (totalSpent === 0 || users.length === 0) return [];
 
     const fairShare = totalSpent / users.length;
     
-    // Calculate initial balance
+    // Calculate balance: Positive = Paid too much (Receive), Negative = Paid too little (Owe)
     let balances = userExpenses.map(u => ({
       ...u,
       balance: u.value - fairShare
     }));
-
-    // APPLY SETTLEMENTS (Adjust balances based on payments already made)
-    settlements.forEach(settlement => {
-      const payer = balances.find(b => b.id === settlement.fromUserId);
-      const receiver = balances.find(b => b.id === settlement.toUserId);
-      
-      if (payer) payer.balance += settlement.amount; // Payer effectively "paid more" (reduced debt)
-      if (receiver) receiver.balance -= settlement.amount; // Receiver "received money" (reduced credit)
-    });
 
     // Separate debtors and creditors
     let debtors = balances.filter(b => b.balance < -0.01).sort((a, b) => a.balance - b.balance);
@@ -95,56 +83,28 @@ export const ExpenseSplitter: React.FC<ExpenseSplitterProps> = ({
       debtor.balance += amount;
       creditor.balance -= amount;
 
+      // Move indices if settled (using epsilon for float precision)
       if (Math.abs(debtor.balance) < 0.01) i++;
       if (creditor.balance < 0.01) j++;
     }
 
     return transactions;
-  }, [userExpenses, totalSpent, users.length, settlements]);
-
-  const handleBizum = (transaction: any) => {
-    // 1. Mark as paid in the app
-    onSettleDebt(transaction.from.id, transaction.to.id, transaction.amount);
-    
-    // 2. Open Bizum intent (Simulated via copying number or opening generic payment link if no real deep link exists)
-    // Real Bizum deep links are bank-specific. We will simulate checking the number.
-    if (transaction.to.phoneNumber) {
-      // Copy to clipboard or try to open generic tel link
-      navigator.clipboard.writeText(transaction.to.phoneNumber);
-      alert(`Número ${transaction.to.phoneNumber} copiado. Abriendo aplicación de pagos...`);
-      // In a real mobile app, this would be a deep link
-      window.location.href = `tel:${transaction.to.phoneNumber}`;
-    } else {
-      alert("Pago registrado. (El usuario no tiene teléfono configurado para Bizum)");
-    }
-  };
+  }, [userExpenses, totalSpent, users.length]);
 
   const COLORS = ['#10b981', '#3b82f6', '#f59e0b', '#ec4899', '#8b5cf6', '#ef4444'];
 
   return (
     <div className="pb-24 space-y-6">
-      
-      {/* Summary Cards */}
-      <div className="grid grid-cols-2 gap-4">
-        <div className="bg-white dark:bg-slate-900 p-5 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-800 flex flex-col items-center text-center">
-            <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-1">Tu Gasto</span>
-            <span className="text-2xl font-black text-emerald-600 dark:text-emerald-500">${myExpense.toFixed(2)}</span>
-            <div className="w-full bg-slate-100 dark:bg-slate-800 rounded-full h-1.5 mt-3 overflow-hidden">
-                <div 
-                  className="bg-emerald-500 h-full rounded-full transition-all duration-500" 
-                  style={{ width: `${totalSpent > 0 ? (myExpense / totalSpent) * 100 : 0}%` }}
-                />
-            </div>
-        </div>
-
-        <div className="bg-white dark:bg-slate-900 p-5 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-800 flex flex-col items-center text-center">
-            <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-1">Total Grupo</span>
-            <span className="text-2xl font-black text-slate-800 dark:text-white">${totalSpent.toFixed(2)}</span>
-            <span className="text-[10px] text-slate-400 mt-2">{users.length} miembros</span>
+      {/* Header Card */}
+      <div className="bg-white dark:bg-slate-900 p-6 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-800 text-center">
+        <p className="text-slate-500 font-medium mb-1 uppercase text-xs tracking-wider">Total Gastado</p>
+        <h2 className="text-4xl font-black text-slate-800 dark:text-white tracking-tight">${totalSpent.toFixed(2)}</h2>
+        <div className="mt-2 inline-flex items-center px-3 py-1 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 text-xs font-bold">
+           <span>{users.length > 0 ? (totalSpent / users.length).toFixed(2) : 0} $ / persona</span>
         </div>
       </div>
 
-      {/* Debts Section */}
+      {/* Debts Section (New) */}
       <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-800 overflow-hidden">
         <div className="p-4 border-b border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 flex items-center justify-between">
            <h3 className="font-bold text-slate-800 dark:text-slate-200 flex items-center gap-2">
@@ -162,72 +122,41 @@ export const ExpenseSplitter: React.FC<ExpenseSplitterProps> = ({
             <div className="flex flex-col items-center justify-center py-6 text-emerald-500">
               <CheckCircle2 size={48} className="mb-2 opacity-50" />
               <p className="font-bold">¡Todo cuadra!</p>
-              <p className="text-xs text-slate-400">Todos han pagado lo justo o las deudas han sido saldadas.</p>
+              <p className="text-xs text-slate-400">Todos han pagado lo mismo.</p>
             </div>
           ) : (
-            debts.map((t, idx) => {
-              const iAmPayer = t.from.id === currentUser.id;
-              const iAmReceiver = t.to.id === currentUser.id;
-              
-              return (
-              <div key={idx} className={`flex flex-col p-3 rounded-xl border transition-all ${iAmPayer ? 'bg-amber-50 dark:bg-amber-900/10 border-amber-100 dark:border-amber-900/30' : 'bg-slate-50 dark:bg-slate-950/50 border-slate-100 dark:border-slate-800/50'}`}>
-                
-                <div className="flex items-center justify-between mb-2">
-                  <div className="flex items-center gap-3 flex-1">
-                     <div className="flex flex-col items-center min-w-[3rem]">
-                        <img src={t.from.avatar} className="w-8 h-8 rounded-full mb-1 border border-slate-200 dark:border-slate-700" alt="" />
-                        <span className="text-[10px] font-bold text-slate-600 dark:text-slate-400 truncate max-w-[4rem]">{iAmPayer ? 'Tú' : t.from.name}</span>
-                     </div>
+            debts.map((t, idx) => (
+              <div key={idx} className="flex items-center justify-between p-3 rounded-xl bg-slate-50 dark:bg-slate-950/50 border border-slate-100 dark:border-slate-800/50">
+                <div className="flex items-center gap-3 flex-1">
+                   {/* Payer */}
+                   <div className="flex flex-col items-center min-w-[3rem]">
+                      <img src={t.from.avatar} className="w-8 h-8 rounded-full mb-1 border border-slate-200 dark:border-slate-700" alt="" />
+                      <span className="text-[10px] font-bold text-slate-600 dark:text-slate-400 truncate max-w-[4rem]">{t.from.name}</span>
+                   </div>
 
-                     <div className="flex-1 flex flex-col items-center">
-                        <ArrowRight size={16} className="text-slate-300" />
-                     </div>
+                   {/* Direction */}
+                   <div className="flex-1 flex flex-col items-center">
+                      <span className="text-xs font-bold text-slate-400 mb-1">paga a</span>
+                      <ArrowRight size={16} className="text-slate-300" />
+                   </div>
 
-                     <div className="flex flex-col items-center min-w-[3rem]">
-                        <img src={t.to.avatar} className="w-8 h-8 rounded-full mb-1 border border-slate-200 dark:border-slate-700" alt="" />
-                        <span className="text-[10px] font-bold text-slate-600 dark:text-slate-400 truncate max-w-[4rem]">{iAmReceiver ? 'Ti' : t.to.name}</span>
-                     </div>
-                  </div>
-
-                  <div className="text-right min-w-[4rem]">
-                     <span className="block font-black text-lg text-slate-800 dark:text-white">${t.amount.toFixed(2)}</span>
-                  </div>
+                   {/* Receiver */}
+                   <div className="flex flex-col items-center min-w-[3rem]">
+                      <img src={t.to.avatar} className="w-8 h-8 rounded-full mb-1 border border-slate-200 dark:border-slate-700" alt="" />
+                      <span className="text-[10px] font-bold text-slate-600 dark:text-slate-400 truncate max-w-[4rem]">{t.to.name}</span>
+                   </div>
                 </div>
 
-                {/* Actions for Payer */}
-                {iAmPayer && (
-                   <div className="mt-2 flex gap-2">
-                     {t.to.phoneNumber ? (
-                       <button 
-                         onClick={() => handleBizum(t)}
-                         className="flex-1 py-2 bg-pink-600 hover:bg-pink-700 text-white rounded-lg text-xs font-bold flex items-center justify-center gap-1 shadow-sm transition-colors"
-                       >
-                         <Phone size={12} className="fill-white" />
-                         Hacer Bizum
-                       </button>
-                     ) : (
-                       <button 
-                         disabled
-                         className="flex-1 py-2 bg-slate-200 dark:bg-slate-800 text-slate-400 rounded-lg text-xs font-bold flex items-center justify-center gap-1 cursor-not-allowed"
-                         title="El usuario no tiene teléfono configurado"
-                       >
-                         <Phone size={12} />
-                         No tiene Bizum
-                       </button>
-                     )}
-                     
-                     <button 
-                        onClick={() => onSettleDebt(t.from.id, t.to.id, t.amount)}
-                        className="flex-1 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 rounded-lg text-xs font-bold flex items-center justify-center gap-1 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors"
-                     >
-                       <CheckCircle2 size={12} />
-                       Marcar pagado
-                     </button>
-                   </div>
-                )}
+                {/* Amount */}
+                <div className="pl-4 border-l border-slate-200 dark:border-slate-700 ml-2 text-right min-w-[4rem]">
+                   <span className="block font-black text-lg text-slate-800 dark:text-emerald-400">${t.amount.toFixed(2)}</span>
+                </div>
               </div>
-            )})
+            ))
           )}
+        </div>
+        <div className="px-4 py-2 bg-slate-50 dark:bg-slate-900 border-t border-slate-100 dark:border-slate-800 text-[10px] text-slate-400 text-center">
+           Calculado para repartir el gasto total equitativamente.
         </div>
       </div>
 
