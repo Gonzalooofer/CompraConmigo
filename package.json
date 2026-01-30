@@ -13,8 +13,7 @@
     "react-dom": "^19.2.1",
     "recharts": "^3.5.1",
     "lucide-react": "^0.555.0",
-    "uuid": "^13.0.0",
-    "@google/genai": "^1.31.0"
+    "uuid": "^13.0.0"
   },
   "devDependencies": {
     "@types/node": "^22.14.0",

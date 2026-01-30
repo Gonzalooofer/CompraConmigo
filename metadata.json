@@ -1,7 +1,5 @@
 {
   "name": "CompraConmigo",
-  "description": "Tu compañero inteligente para compras colaborativas. Crea listas, escanea productos con IA y divide gastos fácilmente.",
-  "requestFramePermissions": [
-    "camera"
-  ]
+  "description": "Tu compañero para compras colaborativas. Crea listas, gestiona grupos y divide gastos fácilmente.",
+  "requestFramePermissions": []
 }

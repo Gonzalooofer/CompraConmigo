@@ -10,7 +10,7 @@ import { NewGroupModal } from './components/NewGroupModal';
 import { GroupSettingsModal } from './components/GroupSettingsModal';
 import { AppView, ProductItem, User, Group, Settlement } from './types';
 import { MOCK_USERS, MOCK_GROUPS, INITIAL_ITEMS } from './constants';
-import { Menu, Settings2 } from 'lucide-react';
+import { Menu, Settings2, Plus, LogOut } from 'lucide-react';
 import { v4 as uuidv4 } from 'uuid';
 
 const App: React.FC = () => {
@@ -139,19 +139,12 @@ const App: React.FC = () => {
     const existingGroups = groups.filter(g => g.members.includes(user!.id));
     
     if (existingGroups.length > 0) {
+      // Si ya tiene grupos, entramos al primero
       setCurrentGroup(existingGroups[0]);
     } else {
-      // Create a default group for new user
-      const defaultGroup: Group = {
-        id: uuidv4(),
-        name: 'Mi Casa',
-        members: [user.id],
-        admins: [user.id],
-        icon: '🏠',
-        color: 'bg-emerald-500'
-      };
-      setGroups(prev => [...prev, defaultGroup]);
-      setCurrentGroup(defaultGroup);
+      // MODIFICACIÓN: NO crear grupo automático.
+      // Dejamos currentGroup en null para que salga la pantalla de creación.
+      setCurrentGroup(null);
     }
   };
 
@@ -369,35 +362,52 @@ const App: React.FC = () => {
   }
 
   // 2. Main App (Authenticated)
+  
+  // Si no hay grupo activo, pero el usuario TIENE grupos, seleccionamos el primero automáticamente
   if (!currentGroup && userGroups.length > 0) {
     setCurrentGroup(userGroups[0]);
     return null; 
   }
 
+  // 3. Estado "Sin Grupo" (Dashboard de bienvenida para crear uno)
   if (!currentGroup) {
-     // User has no groups left
      return (
-        <div className="min-h-screen bg-slate-50 dark:bg-slate-950 flex flex-col items-center justify-center p-6 text-center">
-            <h2 className="text-2xl font-bold mb-4 text-slate-800 dark:text-white">¡Vaya! No tienes grupos.</h2>
+        <div className="min-h-screen bg-slate-50 dark:bg-slate-950 flex flex-col items-center justify-center p-6 text-center transition-colors duration-300">
+            
+            <div className="w-24 h-24 bg-emerald-100 dark:bg-emerald-900/30 rounded-3xl flex items-center justify-center mb-8 shadow-xl shadow-emerald-200 dark:shadow-emerald-900/50 animate-in zoom-in duration-500">
+                <span className="text-5xl">👋</span>
+            </div>
+            
+            <h1 className="text-3xl font-black text-slate-800 dark:text-white mb-3">¡Hola, {currentUser.name}!</h1>
+            <p className="text-slate-500 dark:text-slate-400 mb-10 max-w-xs mx-auto leading-relaxed">
+                Bienvenido a <span className="font-bold text-emerald-600 dark:text-emerald-500">CompraConmigo</span>.<br/>
+                Para empezar a organizar tus compras, necesitas crear o unirte a un grupo.
+            </p>
+
             <button 
               onClick={() => setShowNewGroupModal(true)}
-              className="px-6 py-3 bg-emerald-600 text-white rounded-xl font-bold shadow-lg"
+              className="w-full max-w-xs py-4 bg-emerald-600 text-white rounded-2xl font-bold text-lg shadow-xl shadow-emerald-200 dark:shadow-emerald-900/50 hover:bg-emerald-700 hover:scale-105 transition-all active:scale-95 flex items-center justify-center gap-3 group mb-4"
             >
-              Crear Nuevo Grupo
+              <div className="bg-white/20 p-1.5 rounded-lg group-hover:bg-white/30 transition-colors">
+                <Plus size={20} className="text-white" strokeWidth={3} />
+              </div>
+              <span>Crear Nuevo Grupo</span>
             </button>
+            
+            <button 
+               onClick={handleLogout}
+               className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 text-sm font-bold flex items-center gap-2 px-4 py-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+             >
+               <LogOut size={14} />
+               <span>Cerrar Sesión</span>
+             </button>
+
             {showNewGroupModal && (
               <NewGroupModal 
                 onClose={() => setShowNewGroupModal(false)}
                 onCreate={handleCreateGroup}
               />
             )}
-            
-             <button 
-               onClick={handleLogout}
-               className="mt-6 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 text-sm"
-             >
-               Cerrar Sesión
-             </button>
         </div>
      )
   }
