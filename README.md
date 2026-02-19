@@ -50,28 +50,67 @@ A simple Express/Mongoose API lives in the `server/` folder. It exposes CRUD end
 - The frontend is configured to call the API base URL from `VITE_API_BASE`. You can override this in an `.env` file at the project root (e.g. `VITE_API_BASE=http://localhost:5000/api`).
 - All data fetched via the API replaces the previous mock/localStorage implementation.
 
-### Email‑based authentication
+### Autenticación con correo y contraseña
 
-Se ha añadido soporte para registro e inicio de sesión mediante un código enviado a través de
-Gmail. Para habilitarlo hay que configurar las credenciales de correo en el backend:
+El sistema de autenticación ha sido ampliado para soportar registro/inicio con **email y contraseña**, acompañado de un código de verificación enviado por Gmail.
+
+1. **Registro**
+   - El usuario introduce email, contraseña y nombre (opcional).
+   - Si el correo no existe en la base de datos se crea un nuevo `User` con la contraseña
+     almacenada como hash (bcrypt) y se genera un código de verificación válido 15 minutos.
+   - El servidor intenta enviar dicho código al correo; si el envío falla la cuenta sigue siendo
+     creada y el usuario podrá solicitar el código más tarde.
+2. **Verificación**
+   - Antes de acceder a la aplicación el usuario debe introducir el código recibido.
+   - El modal de autenticación (`components/AuthModal.tsx`) muestra un botón **Reenviar código**
+     que queda deshabilitado durante 60 s tras cada envío.
+3. **Inicio de sesión posterior**
+   - Una vez verificado, el usuario puede iniciar sesión con email y contraseña.
+   - Si la contraseña es incorrecta se muestra un error; si el correo no estuviera verificado,
+     se reenvía automáticamente un código.
+   - El flujo de “olvidé mi contraseña” no está implementado en este cambio, pero el usuario siempre
+     puede iniciar sesión mediante el código si no recuerda la contraseña.
+
+El campo `email` del modelo `User` se mantiene opcional para no afectar a los usuarios existentes.
+
+#### Rutas nuevas del API
+- `POST /api/auth/register` – {name,email,password} crea la cuenta y envía código.
+- `POST /api/auth/login` – {email,password} autentica si está verificado.
+- `POST /api/auth/verify` – {email,code} marca como verificado y devuelve el usuario.
+- `POST /api/auth/resend` – {email} genera y envía un nuevo código (límite 1/minuto).
+
+#### Configuración de entorno
+En `server/.env` (no se hace commit) deben definirse al menos:
 
 ```env
+MONGO_URI=mongodb://…
+PORT=5000
+
+# credenciales de Gmail usadas para enviar los códigos
 GMAIL_USER=tu_cuenta@gmail.com
-GMAIL_PASS=tu_contraseña_o_app_password
+GMAIL_PASS=tu_app_password_o_contraseña
 ```
 
-Instala el paquete `nodemailer` en el subdirectorio `server`:
+> Gmail suele rechazar intentos de envío si no se permiten aplicaciones menos seguras.
+> Utiliza un *app password* desde la cuenta de Google y asegúrate de que el acceso SMTP
+> esté habilitado.
+
+#### Dependencias adicionales
+Desde el directorio `server` instala:
 
 ```bash
-cd server
-npm install nodemailer
-npm install -D @types/nodemailer
+npm install
+npm install nodemailer bcrypt
+npm install -D @types/nodemailer @types/bcrypt
 ```
 
-El servidor ofrece nuevas rutas bajo `/api/auth` (`register`, `login`, `verify`) y gestiona
-la lógica de envío del código y verificación. El campo `email` del modelo `User` es opcional
-para usuarios creados manualmente, pero los que pasan por el flujo de correo deben tenerlo.
+Esto añade `nodemailer` (para enviar emails) y `bcrypt` (para proteger contraseñas).
 
-En el frontend la interacción se realiza en el modal de autenticación (`components/AuthModal.tsx`),
-que ahora pide correo (y nombre opcional) y después el código recibido. La experiencia principal
-(y la base de datos Mongo) siguen funcionando igual para el resto de la aplicación.
+#### Notas de implementación
+- Todo el código relacionado está dentro de `server/src/routes/auth.ts` y `components/AuthModal.tsx`.
+- El resto de la aplicación (CRUD de usuarios, grupos, listas, etc.) es compatible y no se ha tocado.
+
+---
+
+El texto anterior se conserva como referencia histórica, pero el flujo actual ya no se basa solo en
+un simple nombre.

@@ -7,6 +7,7 @@ const router = Router();
 function sanitizeUser(doc: any) {
   if (!doc) return doc;
   const obj = doc.toObject ? doc.toObject() : { ...doc };
+  delete obj.passwordHash;
   delete obj.verificationCode;
   delete obj.verificationExpires;
   delete obj.__v;

@@ -1,4 +1,5 @@
 import { Router } from 'express';
+import bcrypt from 'bcrypt';
 import User from '../models/user';
 import { sendVerificationEmail } from '../utils/mailer';
 
@@ -8,11 +9,11 @@ function makeCode() {
   return Math.floor(100000 + Math.random() * 900000).toString();
 }
 
-// register new user (or reject if email already exists)
+// register new user (name, email, password)
 router.post('/register', async (req, res) => {
-  const { name, email } = req.body;
-  if (!name || !email) {
-    return res.status(400).json({ error: 'Name and email are required' });
+  const { name, email, password } = req.body;
+  if (!name || !email || !password) {
+    return res.status(400).json({ error: 'Name, email and password are required' });
   }
 
   const existing = await User.findOne({ email });
@@ -24,47 +25,87 @@ router.post('/register', async (req, res) => {
   const expires = new Date(Date.now() + 15 * 60 * 1000); // 15 minutes
 
   try {
+    const passwordHash = await bcrypt.hash(password, 10);
     const user = new User({
       name,
       email,
+      passwordHash,
       avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${name}`,
       color: 'bg-purple-500',
       verified: false,
       verificationCode: code,
-      verificationExpires: expires
+      verificationExpires: expires,
+      lastCodeSentAt: new Date()
     });
     await user.save();
-    await sendVerificationEmail(email, code);
-    res.status(201).json({ message: 'Verification code sent' });
+    let mailWarning = false;
+    try {
+      await sendVerificationEmail(email, code);
+    } catch (mailErr) {
+      console.error('email send failure (register)', mailErr);
+      mailWarning = true;
+      // don't fail registration just because mail failed
+    }
+    const response: any = { message: 'Verification code sent' };
+    if (mailWarning) response.warning = 'failed to send email';
+    res.status(201).json(response);
   } catch (err) {
     console.error('register error', err);
     res.status(500).json({ error: 'Server error' });
   }
 });
 
-// request login code for existing user
+// login with email + password
 router.post('/login', async (req, res) => {
+  const { email, password } = req.body;
+  if (!email || !password) return res.status(400).json({ error: 'Email and password required' });
+
+  const user = await User.findOne({ email });
+  if (!user) return res.status(404).json({ error: 'No user with that email' });
+  if (!user.verified) return res.status(403).json({ error: 'Email not verified' });
+
+  const match = await bcrypt.compare(password, user.passwordHash || '');
+  if (!match) return res.status(401).json({ error: 'Incorrect password' });
+
+  const result: any = user.toObject();
+  delete result.passwordHash;
+  delete result.verificationCode;
+  delete result.verificationExpires;
+  delete result.__v;
+  result.id = result._id || result.id;
+  res.json(result);
+});
+
+// resend verification code (throttled to 60s)
+router.post('/resend', async (req, res) => {
   const { email } = req.body;
   if (!email) return res.status(400).json({ error: 'Email is required' });
 
   const user = await User.findOne({ email });
-  if (!user) return res.status(404).json({ error: 'No user with that email' });
+  if (!user) return res.status(404).json({ error: 'User not found' });
+  if (user.verified) return res.status(400).json({ error: 'Already verified' });
+
+  const now = new Date();
+  if (user.lastCodeSentAt && now.getTime() - user.lastCodeSentAt.getTime() < 60 * 1000) {
+    return res.status(429).json({ error: 'Please wait before resending code' });
+  }
 
   const code = makeCode();
   user.verificationCode = code;
   user.verificationExpires = new Date(Date.now() + 15 * 60 * 1000);
+  user.lastCodeSentAt = now;
   await user.save();
 
   try {
     await sendVerificationEmail(email, code);
-    res.json({ message: 'Verification code sent' });
+    res.json({ message: 'Verification code resent' });
   } catch (err) {
-    console.error('login code send error', err);
-    res.status(500).json({ error: 'Failed to send email' });
+    console.error('resend code error', err);
+    res.json({ warning: 'failed to send email' });
   }
 });
 
-// verify code (both registration and login)
+// verify code (registration only)
 router.post('/verify', async (req, res) => {
   const { email, code } = req.body;
   if (!email || !code) {
@@ -88,6 +129,7 @@ router.post('/verify', async (req, res) => {
 
   // return normalized/sanitized user
   const result: any = user.toObject();
+  delete result.passwordHash;
   delete result.verificationCode;
   delete result.verificationExpires;
   delete result.__v;

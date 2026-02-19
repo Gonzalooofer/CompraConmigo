@@ -10,9 +10,11 @@ const userSchema = new Schema({
   plan: { type: String, enum: ['free', 'premium', 'family'], default: 'free' },
 
   // authentication/verification fields
+  passwordHash: { type: String },
   verified: { type: Boolean, default: false },
   verificationCode: { type: String },
-  verificationExpires: { type: Date }
+  verificationExpires: { type: Date },
+  lastCodeSentAt: { type: Date }
 }, { timestamps: true });
 
 export default model('User', userSchema);

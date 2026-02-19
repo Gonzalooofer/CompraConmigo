@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { X, Mail, Key, ArrowRight, User } from 'lucide-react';
 import * as api from '../services/api';
 import { User as UserType } from '../types';
@@ -11,38 +11,70 @@ interface AuthModalProps {
 }
 
 export const AuthModal: React.FC<AuthModalProps> = ({ onClose, onLogin, allowClose = true }) => {
-  const [step, setStep] = useState<'email' | 'code'>('email');
+  const [step, setStep] = useState<'credentials' | 'code'>('credentials');
   const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [name, setName] = useState('');
   const [code, setCode] = useState('');
   const [message, setMessage] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
-  const handleEmailSubmit = async (e: React.FormEvent) => {
+  // resend timer
+  const [resendTimer, setResendTimer] = useState(0);
+  useEffect(() => {
+    let timer: NodeJS.Timeout;
+    if (resendTimer > 0) {
+      timer = setTimeout(() => setResendTimer(resendTimer - 1), 1000);
+    }
+    return () => clearTimeout(timer);
+  }, [resendTimer]);
+
+  const handleCredentialsSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!email.trim()) return;
+    if (!email.trim() || !password.trim()) return;
     setLoading(true);
     setMessage(null);
     try {
-      // try register first; if user didn't type a name, use the part before @
-      const regName = name.trim() || email.split('@')[0];
-      await api.register({ name: regName, email: email.trim() });
-      setMessage('Código enviado. Revisa tu correo.');
+      const user = await api.login(email.trim(), password);
+      onLogin(user as UserType);
+      onClose();
+      return;
     } catch (err: any) {
-      if (err.status === 409) {
-        // already registered -> just send login code
-        setMessage('Correo ya registrado. Enviando código.');
+      if (err.status === 404) {
+        // register flow
         try {
-          await api.loginRequestCode(email.trim());
-        } catch (inner) {
-          setMessage('No se pudo enviar el código.');
+          const resp: any = await api.register({
+            name: name.trim() || email.split('@')[0],
+            email: email.trim(),
+            password
+          });
+          setMessage(
+            resp.warning
+              ? 'Cuenta creada pero no se pudo enviar el correo.'
+              : 'Cuenta creada. Revisa tu correo para el código.'
+          );
+          setStep('code');
+          setResendTimer(60);
+        } catch (regErr: any) {
+          setMessage('Error al registrarse.');
         }
+      } else if (err.status === 403) {
+        setMessage('Cuenta no verificada, reenviando código...');
+        try {
+          const resp: any = await api.resendCode(email.trim());
+          if (resp.warning) {
+            setMessage('Código no enviado (problema de correo).');
+          }
+          setResendTimer(60);
+        } catch (_){ }
+        setStep('code');
+      } else if (err.status === 401) {
+        setMessage('Contraseña incorrecta');
       } else {
         setMessage('Ocurrió un error, inténtalo nuevamente.');
       }
     } finally {
       setLoading(false);
-      setStep('code');
     }
   };
 
@@ -59,6 +91,21 @@ export const AuthModal: React.FC<AuthModalProps> = ({ onClose, onLogin, allowClo
       setMessage('Código inválido o expirado.');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleResend = async () => {
+    if (resendTimer > 0) return;
+    try {
+      const resp: any = await api.resendCode(email.trim());
+      if (resp.warning) {
+        setMessage('Código no enviado (problema de correo).');
+      } else {
+        setMessage('Código reenviado');
+      }
+      setResendTimer(60);
+    } catch (err: any) {
+      setMessage(err.error || 'No se pudo reenviar.');
     }
   };
 
@@ -79,12 +126,12 @@ export const AuthModal: React.FC<AuthModalProps> = ({ onClose, onLogin, allowClo
 
           <div className="text-left space-y-2">
             <h2 className="text-3xl font-black text-slate-800 dark:text-slate-100 tracking-tight">
-              {step === 'email' ? 'Ingresa tu correo' : 'Introduce el código'}
+              {step === 'credentials' ? 'Correo y contraseña' : 'Introduce el código'}
             </h2>
             <p className="text-slate-500 dark:text-slate-400">
-              {step === 'email'
-                ? 'Te enviaremos un código por Gmail para continuar.'
-                : 'Revisa tu bandeja de entrada y escribe el código que recibiste.'}
+              {step === 'credentials'
+                ? 'Escribe tu email y una contraseña. Si es primera vez, se enviará un código de verificación.'
+                : 'Revisa tu correo y escribe el código que recibiste.'}
             </p>
           </div>
 
@@ -95,10 +142,10 @@ export const AuthModal: React.FC<AuthModalProps> = ({ onClose, onLogin, allowClo
           )}
 
           <form
-            onSubmit={step === 'email' ? handleEmailSubmit : handleCodeSubmit}
+            onSubmit={step === 'credentials' ? handleCredentialsSubmit : handleCodeSubmit}
             className="space-y-4 pt-2"
           >
-            {step === 'email' ? (
+            {step === 'credentials' ? (
               <>
                 <div className="relative group">
                   <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500 group-focus-within:text-emerald-500 transition-colors" size={20} />
@@ -109,6 +156,16 @@ export const AuthModal: React.FC<AuthModalProps> = ({ onClose, onLogin, allowClo
                     onChange={(e) => setEmail(e.target.value)}
                     className="w-full pl-12 pr-4 py-4 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl focus:ring-4 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none transition-all text-lg font-bold text-slate-800 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-600"
                     autoFocus
+                  />
+                </div>
+                <div className="relative group">
+                  <Key className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500 group-focus-within:text-emerald-500 transition-colors" size={20} />
+                  <input
+                    type="password"
+                    placeholder="Contraseña"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    className="w-full pl-12 pr-4 py-4 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl focus:ring-4 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none transition-all text-lg font-bold text-slate-800 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-600"
                   />
                 </div>
                 <div className="relative group">
@@ -123,25 +180,35 @@ export const AuthModal: React.FC<AuthModalProps> = ({ onClose, onLogin, allowClo
                 </div>
               </>
             ) : (
-              <div className="relative group">
-                <Key className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500 group-focus-within:text-emerald-500 transition-colors" size={20} />
-                <input
-                  type="text"
-                  placeholder="Código de 6 dígitos"
-                  value={code}
-                  onChange={(e) => setCode(e.target.value)}
-                  className="w-full pl-12 pr-4 py-4 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl focus:ring-4 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none transition-all text-lg font-bold text-slate-800 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-600"
-                  autoFocus
-                />
-              </div>
+              <>
+                <div className="relative group">
+                  <Key className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500 group-focus-within:text-emerald-500 transition-colors" size={20} />
+                  <input
+                    type="text"
+                    placeholder="Código de 6 dígitos"
+                    value={code}
+                    onChange={(e) => setCode(e.target.value)}
+                    className="w-full pl-12 pr-4 py-4 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl focus:ring-4 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none transition-all text-lg font-bold text-slate-800 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-600"
+                    autoFocus
+                  />
+                </div>
+                <button
+                  type="button"
+                  disabled={resendTimer > 0}
+                  onClick={handleResend}
+                  className="text-xs text-emerald-600 hover:underline"
+                >
+                  {resendTimer > 0 ? `Reenviar en ${resendTimer}s` : 'Reenviar código'}
+                </button>
+              </>
             )}
 
             <button
               type="submit"
-              disabled={loading || (step === 'email' ? !email.trim() : !code.trim())}
+              disabled={loading || (step === 'credentials' ? !email.trim() || !password : !code.trim())}
               className="w-full py-4 bg-emerald-600 text-white font-bold rounded-2xl shadow-lg shadow-emerald-200 dark:shadow-emerald-900/50 hover:bg-emerald-700 hover:scale-[1.02] transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none flex items-center justify-center space-x-2"
             >
-              <span>{step === 'email' ? 'Enviar código' : 'Verificar'}</span>
+              <span>{step === 'credentials' ? 'Continuar' : 'Verificar'}</span>
               <ArrowRight size={20} />
             </button>
           </form>

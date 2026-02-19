@@ -51,10 +51,12 @@ export const getSettlements = () => request('/settlements');
 export const createSettlement = (data: any) => request('/settlements', { method: 'POST', body: JSON.stringify(data) });
 
 // Authentication
-export const register = (data: { name: string; email: string }) =>
+export const register = (data: { name: string; email: string; password: string }) =>
   request('/auth/register', { method: 'POST', body: JSON.stringify(data) });
-export const loginRequestCode = (email: string) =>
-  request('/auth/login', { method: 'POST', body: JSON.stringify({ email }) });
+export const login = (email: string, password: string) =>
+  request('/auth/login', { method: 'POST', body: JSON.stringify({ email, password }) });
 export const verifyCode = (email: string, code: string) =>
   request('/auth/verify', { method: 'POST', body: JSON.stringify({ email, code }) });
+export const resendCode = (email: string) =>
+  request('/auth/resend', { method: 'POST', body: JSON.stringify({ email }) });
 
