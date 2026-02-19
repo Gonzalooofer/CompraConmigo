@@ -77,6 +77,10 @@ export const ShoppingList: React.FC<ShoppingListProps> = ({
   const [comparingProduct, setComparingProduct] = useState<string | null>(null);
   const [showInviteModal, setShowInviteModal] = useState(false);
   const [showChatModal, setShowChatModal] = useState(false);
+  const [assigningItemId, setAssigningItemId] = useState<string | null>(null);
+  
+  const groupedItems = useMemo(() => {
+    const groups: Record<string, ProductItem[]> = {};
     CATEGORIES.forEach(cat => groups[cat] = []);
     items.forEach(item => {
       const cat = CATEGORIES.includes(item.category) ? item.category : 'Otros';
