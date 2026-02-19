@@ -26,8 +26,8 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   const [showPlanModal, setShowPlanModal] = useState(false);
   const [email, setEmail] = useState(currentUser.email || '');
   const [phone, setPhone] = useState(currentUser.phoneNumber || '');
-  const [notificationsEnabled, setNotificationsEnabled] = useState(currentUser.notificationsEnabled ?? true);
-  const [language, setLanguage] = useState(currentUser.language || 'es');
+  const [notificationsEnabled, setNotificationsEnabled] = useState(true);
+  const [language, setLanguage] = useState('es');
 
   const handleSaveProfile = () => {
     onUpdateUser(currentUser.id, {
@@ -132,11 +132,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                   <span className="text-sm font-bold text-slate-700 dark:text-slate-200">Notificaciones</span>
                </div>
                <button 
-                  onClick={() => {
-                    const nextValue = !notificationsEnabled;
-                    setNotificationsEnabled(nextValue);
-                    onUpdateUser(currentUser.id, { notificationsEnabled: nextValue });
-                  }}
+                  onClick={() => setNotificationsEnabled(!notificationsEnabled)}
                   className={`w-12 h-7 rounded-full p-1 transition-colors duration-300 ease-in-out ${notificationsEnabled ? 'bg-emerald-500' : 'bg-slate-300'}`}
                 >
                   <div className={`w-5 h-5 bg-white rounded-full shadow-sm transform transition-transform duration-300 ${notificationsEnabled ? 'translate-x-5' : 'translate-x-0'}`} />
@@ -153,11 +149,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                </div>
                <select 
                  value={language}
-                 onChange={(e) => {
-                   const nextLanguage = e.target.value;
-                   setLanguage(nextLanguage);
-                   onUpdateUser(currentUser.id, { language: nextLanguage });
-                 }}
+                 onChange={(e) => setLanguage(e.target.value)}
                  className="bg-transparent text-sm font-bold text-slate-500 outline-none text-right"
                >
                  <option value="es">Español</option>

@@ -19,9 +19,6 @@ export interface User {
   email?: string;
   phoneNumber?: string; // Nuevo para Bizum
   plan?: 'free' | 'premium' | 'family'; // Nuevo plan
-  notificationsEnabled?: boolean;
-  language?: string;
-  theme?: 'dark' | 'light';
 }
 
 export interface Group {
