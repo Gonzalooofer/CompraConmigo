@@ -16,8 +16,11 @@ router.get('/group/:groupId', async (req, res) => {
       .skip(skip)
       .lean();
 
-    // Revertir orden para mostrar cronológicamente
-    const orderedMessages = messages.reverse();
+    // Revertir orden para mostrar cronológicamente y normalizar ID
+    const orderedMessages = messages.reverse().map(m => ({
+      ...m,
+      id: m._id.toString()
+    }));
 
     res.json(orderedMessages);
   } catch (err) {

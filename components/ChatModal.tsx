@@ -67,6 +67,7 @@ export const ChatModal: React.FC<ChatModalProps> = ({ groupId, groupName, curren
 
     socket.on('connect', () => {
       console.log('📱 Connected to socket:', socket.id);
+      // Siempre registrar el usuario inmediatamente después de conectar/reconectar
       socket.emit('register-user', currentUser.id);
       socket.emit('join-group', groupId);
     });
