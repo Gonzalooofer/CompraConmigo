@@ -1,24 +1,32 @@
-import nodemailer from 'nodemailer';
+import * as brevo from '@getbrevo/brevo';
 
-// make sure GMAIL_USER and GMAIL_PASS are set in .env
-if (!process.env.GMAIL_USER || !process.env.GMAIL_PASS) {
-  console.warn('warning: GMAIL_USER or GMAIL_PASS not set; email delivery will fail');
+// Configure Brevo API
+const apiInstance = new brevo.TransactionalEmailsApi();
+apiInstance.setApiKey(brevo.TransactionalEmailsApiApiKeys.apiKey, process.env.BREVO_API_KEY || '');
+
+if (!process.env.BREVO_API_KEY) {
+  console.warn('warning: BREVO_API_KEY not set; email delivery will fail');
 }
 
-const transporter = nodemailer.createTransport({
-  service: 'gmail',
-  auth: {
-    user: process.env.GMAIL_USER,
-    pass: process.env.GMAIL_PASS,
-  },
-});
-
 export const sendVerificationEmail = async (to: string, code: string) => {
-  const mailOptions = {
-    from: process.env.GMAIL_USER,
-    to,
-    subject: 'CompraConmigo – código de verificación',
-    text: `Tu código de verificación es: ${code}`
-  };
-  await transporter.sendMail(mailOptions);
+  try {
+    const sendSmtpEmail = new brevo.SendSmtpEmail();
+    sendSmtpEmail.to = [{ email: to }];
+    sendSmtpEmail.sender = { 
+      name: 'CompraConmigo', 
+      email: 'noreply@compraconmigo.com' 
+    };
+    sendSmtpEmail.subject = 'CompraConmigo – código de verificación';
+    sendSmtpEmail.htmlContent = `
+      <h2>Código de verificación</h2>
+      <p>Tu código es: <strong>${code}</strong></p>
+      <p>Este código expira en 15 minutos.</p>
+    `;
+    sendSmtpEmail.textContent = `Tu código de verificación es: ${code}`;
+
+    await apiInstance.sendTransacEmail(sendSmtpEmail);
+  } catch (err) {
+    console.error('Brevo email error:', err);
+    throw err;
+  }
 };
