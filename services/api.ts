@@ -8,10 +8,29 @@ type BootstrapPayload = {
   settlements: Settlement[];
 };
 
-const API_BASE = '/api';
+// allow overriding the base path for deployed setups where
+// a reverse proxy already prefixes requests (e.g. the app is
+// mounted under `/api`).  The value can be set via Vite env
+// variable `VITE_API_BASE`; if it's not defined we fall back to
+// "/api" for local development.
+const API_BASE = import.meta.env.VITE_API_BASE || '/api';
 
 async function request<T>(path: string, options?: RequestInit): Promise<T> {
-  const response = await fetch(`${API_BASE}${path}`, {
+  // build url and guard against double "/api" prefixes which
+  // were causing 405 errors in production (frontend already served
+  // under /api).  any accidental "/api/api/..." collapses to
+  // "/api/...".
+  // build the URL and guard against repeated "/api" prefixes, which can occur
+  // when the frontend is itself mounted under /api or when a proxy adds the prefix.
+  // previous regex only collapsed a single "/api/api/"; that failed to handle
+  // variations like "/api/api/auth/login" or "/api/api/api/auth/login" in
+  // production. we'll coalesce any number of adjacent "/api" segments.
+  let url = `${API_BASE}${path}`;
+  // collapse duplicate "/api" segments (e.g. "/api/api/auth" -> "/api/auth").
+  // also handles trailing cases and multiple repetitions.
+  url = url.replace(/(?:\/api)+/g, '/api');
+
+  const response = await fetch(url, {
     headers: {
       'Content-Type': 'application/json',
       ...(options?.headers || {})

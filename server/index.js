@@ -1,14 +1,34 @@
 import express from 'express';
 import cors from 'cors';
+import path from 'path';
+import { fileURLToPath } from 'url';
 import { v4 as uuidv4 } from 'uuid';
 import { connectDb } from './db.js';
 import { GroupModel, ItemModel, SettlementModel, UserModel } from './models.js';
 import { pickDefined, toGroup, toItem, toSettlement, toUser } from './utils.js';
 
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
 const app = express();
 const PORT = Number(process.env.API_PORT || 3001);
 
+// ensure cors is applied early so preflight requests get handled.
 app.use(cors());
+
+// rewrite middleware to strip an accidental double "/api" prefix. in some
+// deployment environments the frontend is served under a path that already
+// contains "/api" and then our client adds the same prefix again, resulting
+// in requests like "/api/api/auth/login" which the express routes don't
+// recognise. the regex above in the client attempts to correct this, but
+// adding a server‑side fallback ensures we never return 405 for these paths.
+app.use((req, res, next) => {
+  if (req.url.startsWith('/api/api')) {
+    req.url = req.url.replace(/^\/api\/api/, '/api');
+  }
+  next();
+});
+
 app.use(express.json({ limit: '2mb' }));
 
 app.get('/api/health', (_, res) => {
@@ -358,6 +378,18 @@ app.post('/api/settlements', async (req, res) => {
     return res.status(201).json({ settlement: toSettlement(settlementDoc) });
   } catch (error) {
     return res.status(500).json({ message: 'Error registrando pago.', error: String(error) });
+  }
+});
+
+// --- FRONTEND SERVING ---
+
+// Servir archivos estáticos desde la carpeta 'dist'
+app.use(express.static(path.join(__dirname, '../dist')));
+
+// Fallback para SPA: cualquier ruta que no sea de API sirve el index.html
+app.get('*', (req, res) => {
+  if (!req.path.startsWith('/api')) {
+    res.sendFile(path.join(__dirname, '../dist', 'index.html'));
   }
 });
 
