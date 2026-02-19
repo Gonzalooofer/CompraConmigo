@@ -1,143 +1,51 @@
 <div align="center">
-<img width="1200" height="475" alt="CompraConmigo Banner" src="https://lh3.googleusercontent.com/gg-dl/AOI_d_-UpinOCwsf1p_6R4YHN-fGHCsSDvReRomEv8m5g7JGuQVh3ImPXICpIgBhFlMcZYfyutlt4BXAOzTr1OLzH-XQlYFDwUuHqGqqERL3YAWhDszp6d5Pq94IWjNhuRB-6EasIinnjJpD_ZrWCH-xzvNFwas7BkRufMBGoWFqYepj4P2UDg=s1024-rj" />
+<img width="1200" height="475" alt="GHBanner" src="https://github.com/user-attachments/assets/0aa67016-6eaf-458a-adb2-6e31a0763ed6" />
 </div>
 
-# CompraConmigo
+# Run and deploy your AI Studio app
 
-> Una plataforma para gestionar compras en grupo con comparación de precios, listas de la compra y división de gastos.
+This contains everything you need to run your app locally.
 
-**CompraConmigo** es una aplicación full‑stack construida con React (Vite) en el frontend y Node.js/Express con MongoDB en el backend. El proyecto ofrece un entorno de desarrollo listo para usar y scripts de despliegue rápidos.
+View your app in AI Studio: https://ai.studio/apps/drive/1e_rxfIumHhpM6o6a6CmMYI0dezC8nHYt
 
----
+## Run Locally
 
-## 🔧 Requisitos previos
+**Prerequisites:**  Node.js
 
-Antes de empezar, asegúrate de tener instalados los siguientes componentes:
-
-- [Node.js (>=18)](https://nodejs.org/)
-- [npm](https://www.npmjs.com/) (incluido con Node.js)
-- [MongoDB](https://www.mongodb.com/) en ejecución en tu máquina local o en un servidor accesible
-
-> **Nota:** La aplicación utiliza `mongodb://127.0.0.1:27017/compra_conmigo` por defecto. Puedes modificarlo a través de la variable de entorno `MONGO_URI`.
-
----
-
-## 🚀 Instalación y ejecución local
-
-1. **Clona el repositorio**
-   ```bash
-   git clone https://github.com/tu-usuario/CompraConmigo-main.git
-   cd CompraConmigo-main
-   ```
-
-2. **Instala dependencias**
+1. Install dependencies for the frontend:
    ```bash
    npm install
    ```
-
-3. **Configura las variables de entorno**
-   Crea un archivo `.env` en la raíz (opcional) con:
-   ```env
-   MONGO_URI=mongodb://127.0.0.1:27017/compra_conmigo
-   PORT=4000          # puerto de la API
-   ```
-
-4. **Inicia la API y el frontend**
+2. (Optional) set the `GEMINI_API_KEY` in [.env.local](.env.local) to your Gemini API key
+3. Start the frontend:
    ```bash
-   npm run dev:full
+   npm run dev
    ```
 
-5. **Abre la aplicación**
-   Navega a [http://localhost:3000](http://localhost:3000) en tu navegador.
-
 ---
 
-## 🛠 Estructura del proyecto
+## Backend
 
-```
-CompraConmigo-main/
-├─ components/          # Componentes React reutilizables
-├─ server/              # Código del backend (Express + Mongoose)
-├─ services/            # Lógica de servicio compartida
-├─ App.tsx              # Entrada principal del frontend
-├─ index.tsx
-├─ tsconfig.json
-└─ package.json
-```
+A simple Express/Mongoose API lives in the `server/` folder. It exposes CRUD endpoints for users, groups, items and settlements and stores data in MongoDB.
 
----
+### Setup
 
-## 📦 Scripts disponibles
-
-| Script               | Descripción                                   |
-|----------------------|-----------------------------------------------|
-| `npm run dev:full`   | Inicia servidor y cliente en modo desarrollo  |
-| `npm run dev:api`    | Inicia únicamente la API                      |
-| `npm run dev:web`    | Inicia únicamente el frontend                 |
-| `npm run build`      | Construye el frontend para producción         |
-| `npm run start`      | Inicia la API desde la carpeta `dist/`        |
-
-> Puedes editar o añadir más comandos en el `package.json` según necesidades.
-
----
-
-## 🔐 Configuración
-
-Las siguientes variables de entorno son soportadas:
-
-| Variable     | Propósito                           | Valor por defecto                                 |
-|--------------|-------------------------------------|--------------------------------------------------|
-| `MONGO_URI`  | Cadena de conexión de MongoDB       | `mongodb://127.0.0.1:27017/compra_conmigo`       |
-| `PORT`       | Puerto en el que corre la API       | `4000`                                           |
-
----
-
-## 📁 Base de datos
-
-El servidor utiliza Mongoose para interactuar con MongoDB. Algunos puntos clave:
-
-- Se crea automáticamente la base de datos `compra_conmigo` al insertar documentos.
-- Si deseas rescatar datos existentes o cambiar el host, modifica `MONGO_URI`.
-
----
-
-## 🎯 Despliegue
-
-1. Construye el frontend:
+1. Go into the server directory:
    ```bash
-   npm run build
+   cd server
    ```
-2. Copia la carpeta `dist/` generada al servidor o contenedor.
-3. Instala dependencias en el servidor y establece variables de entorno.
-4. Inicia la API con `npm start`.
+2. Install backend dependencies:
+   ```bash
+   npm install
+   ```
+3. Create a `.env` file (there is an example in `server/.env`) and set `MONGO_URI` to your MongoDB connection string.
+4. Run the development server with automatic reload:
+   ```bash
+   npm run dev
+   ```
+   The API will listen on `http://localhost:5000` by default.
 
-> Para contenedores Docker u otros servicios PaaS, adapta estos pasos a la plataforma.
+### Notes
 
----
-
-## 🧪 Testing y calidad
-
-Actualmente el proyecto no incluye pruebas automatizadas, pero se recomienda agregar tests de unidad e integración utilizando herramientas como Jest o Vitest.
-
-También puedes configurar linters (`eslint`, `prettier`) para mantener un estilo consistente.
-
----
-
-## 🆘 Solución de problemas
-
-- **Conexión a MongoDB fallida**: Verifica que el servicio esté activo y que `MONGO_URI` sea correcto.
-- **Errores de compilación TypeScript**: Asegúrate de que tus dependencias estén actualizadas y ejecuta `npm run build` para más detalles.
-
----
-
-## 📄 Licencia
-
-MIT © [Tu Nombre](https://github.com/tu-usuario)
-
----
-
-## 💡 Contribuciones
-
-¡Todas las contribuciones son bienvenidas! Abre un _issue_ o _pull request_ siguiendo las pautas habituales.
-
-Gracias por usar **CompraConmigo** 😄
+- The frontend is configured to call the API base URL from `VITE_API_BASE`. You can override this in an `.env` file at the project root (e.g. `VITE_API_BASE=http://localhost:5000/api`).
+- All data fetched via the API replaces the previous mock/localStorage implementation.
