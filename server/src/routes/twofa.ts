@@ -2,7 +2,6 @@ import { Router, Request, Response } from 'express';
 import speakeasy from 'speakeasy';
 import QRCode from 'qrcode';
 import User from '../models/user';
-import { authenticateUser } from '../utils/auth';
 
 const router = Router();
 

@@ -23,6 +23,7 @@ export interface User {
   city?: string; // Ciudad del usuario
   postalCode?: string; // Código postal
   plan?: 'free' | 'premium' | 'family'; // Plan del usuario
+  twoFAEnabled?: boolean;
 }
 
 export interface Group {

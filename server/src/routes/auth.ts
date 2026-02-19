@@ -71,6 +71,16 @@ router.post('/login', async (req, res) => {
   const match = await bcrypt.compare(password, user.passwordHash || '');
   if (!match) return res.status(401).json({ error: 'Incorrect password' });
 
+  // If 2FA is enabled, do NOT send verification email now.
+  // The frontend will ask for the TOTP code instead.
+  if (user.twoFAEnabled) {
+    return res.json({
+      message: '2FA_REQUIRED',
+      userId: user._id,
+      twoFAEnabled: true
+    });
+  }
+
   // Generate login code
   const code = makeCode();
   user.loginCode = code;
@@ -80,10 +90,10 @@ router.post('/login', async (req, res) => {
 
   try {
     await sendVerificationEmail(email, code);
-    res.json({ message: 'Login code sent to email' });
+    res.json({ message: 'Login code sent to email', twoFAEnabled: false });
   } catch (mailErr) {
     console.error('email send failure (login)', mailErr);
-    res.json({ warning: 'failed to send email' });
+    res.json({ warning: 'failed to send email', twoFAEnabled: false });
   }
 });
 
@@ -150,9 +160,9 @@ router.post('/verify', async (req, res) => {
   res.json(result);
 });
 
-export default router;// verify login code
+// verify login code
 router.post('/verify-login', async (req, res) => {
-  const { email, code } = req.body;
+  const { email, code, rememberMe } = req.body;
   if (!email || !code) {
     return res.status(400).json({ error: 'Email and code are required' });
   }
@@ -169,6 +179,14 @@ router.post('/verify-login', async (req, res) => {
 
   user.loginCode = undefined;
   user.loginCodeExpires = undefined;
+
+  // Generate remember-me token if requested
+  let rememberMeToken;
+  if (rememberMe) {
+    rememberMeToken = require('crypto').randomBytes(32).toString('hex');
+    user.rememberMeToken = rememberMeToken;
+  }
+
   await user.save();
 
   // return normalized/sanitized user
@@ -180,7 +198,13 @@ router.post('/verify-login', async (req, res) => {
   delete result.loginCodeExpires;
   delete result.__v;
   result.id = result._id || result.id;
+
+  if (rememberMeToken) {
+    result.rememberMeToken = rememberMeToken;
+  }
+
   res.json(result);
 });
 
 export default router;
+

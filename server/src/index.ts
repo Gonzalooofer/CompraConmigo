@@ -36,7 +36,7 @@ mongoose.connect(MONGO_URI)
   .catch(err => console.error('❌ Mongo connection error', err));
 
 // Basic health check
-app.get('/', (req, res) => res.send('CompraConmigo API')); 
+app.get('/', (req, res) => res.send('CompraConmigo API'));
 
 app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
@@ -56,29 +56,30 @@ io.on('connection', (socket) => {
   // Registrar usuario y su socket
   socket.on('register-user', (userId: string) => {
     connectedUsers.set(userId, socket.id);
-    socket.userId = userId;
+    (socket as any).userId = userId;
   });
 
   // Unirse a una sala de grupo
   socket.on('join-group', (groupId: string) => {
     socket.join(groupId);
-    io.to(groupId).emit('user-joined', { userId: socket.userId, timestamp: new Date() });
+    io.to(groupId).emit('user-joined', { userId: (socket as any).userId, timestamp: new Date() });
   });
 
   // Salir de una sala de grupo
   socket.on('leave-group', (groupId: string) => {
     socket.leave(groupId);
-    io.to(groupId).emit('user-left', { userId: socket.userId, timestamp: new Date() });
+    io.to(groupId).emit('user-left', { userId: (socket as any).userId, timestamp: new Date() });
   });
 
   // Enviar mensaje en el chat
   socket.on('send-message', async (data: { groupId: string; content: string; userName: string; userAvatar: string }) => {
     try {
+      const userId = (socket as any).userId;
       // Guardar mensaje en BD
       const Message = require('./models/message').default;
       const message = new Message({
         groupId: data.groupId,
-        userId: socket.userId,
+        userId: userId,
         userName: data.userName,
         userAvatar: data.userAvatar,
         content: data.content,
@@ -90,7 +91,7 @@ io.on('connection', (socket) => {
       io.to(data.groupId).emit('new-message', {
         id: message._id,
         groupId: data.groupId,
-        userId: socket.userId,
+        userId: userId,
         userName: data.userName,
         userAvatar: data.userAvatar,
         content: data.content,
@@ -104,16 +105,16 @@ io.on('connection', (socket) => {
 
   // Escribiendo... (indicador en tiempo real)
   socket.on('typing', (data: { groupId: string; userName: string }) => {
-    io.to(data.groupId).emit('user-typing', { userId: socket.userId, userName: data.userName });
+    io.to(data.groupId).emit('user-typing', { userId: (socket as any).userId, userName: data.userName });
   });
 
   // Dejar de escribir
-  socket.on('stop-typing', (groupId: string) => {
-    io.to(groupId).emit('user-stopped-typing', { userId: socket.userId });
+  socket.on('stop-typing', (data: { groupId: string; userName: string }) => {
+    io.to(data.groupId).emit('user-stopped-typing', { userId: (socket as any).userId, userName: data.userName });
   });
 
   socket.on('disconnect', () => {
-    connectedUsers.delete(socket.userId);
+    connectedUsers.delete((socket as any).userId);
     console.log(`📱 User disconnected: ${socket.id}`);
   });
 });

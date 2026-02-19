@@ -58,7 +58,8 @@ export const ChatModal: React.FC<ChatModalProps> = ({ groupId, groupName, curren
 
   // Conectar a Socket.IO
   useEffect(() => {
-    const socket = io(window.location.origin, {
+    const socketUrl = window.location.hostname === 'localhost' ? 'http://localhost:5000' : window.location.origin;
+    const socket = io(socketUrl, {
       path: '/socket.io'
     });
 
@@ -80,11 +81,11 @@ export const ChatModal: React.FC<ChatModalProps> = ({ groupId, groupName, curren
       }
     });
 
-    socket.on('user-stopped-typing', (data: { userId: string }) => {
+    socket.on('user-stopped-typing', (data: { userId: string; userName: string }) => {
       if (data.userId !== currentUser.id) {
         setTypingUsers(prev => {
           const next = new Set(prev);
-          // Remover basado en userId, necesitamos mapeo
+          next.delete(data.userName);
           return next;
         });
       }
@@ -133,7 +134,7 @@ export const ChatModal: React.FC<ChatModalProps> = ({ groupId, groupName, curren
       // Establecer nuevo timeout
       typingTimeoutRef.current = window.setTimeout(() => {
         if (socketRef.current) {
-          socketRef.current.emit('stop-typing', groupId);
+          socketRef.current.emit('stop-typing', { groupId, userName: currentUser.name });
         }
       }, 2000);
     }
@@ -142,7 +143,7 @@ export const ChatModal: React.FC<ChatModalProps> = ({ groupId, groupName, curren
   return (
     <div className="fixed inset-0 z-[75] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-in fade-in duration-200">
       <div className="bg-white dark:bg-slate-900 w-full max-w-2xl h-[600px] rounded-2xl overflow-hidden shadow-2xl animate-in zoom-in-95 duration-200 flex flex-col border border-slate-100 dark:border-slate-800">
-        
+
         {/* Header */}
         <div className="p-4 border-b border-slate-100 dark:border-slate-800 flex justify-between items-center bg-gradient-to-r from-emerald-50 to-teal-50 dark:from-slate-800 dark:to-slate-900">
           <div>
@@ -175,9 +176,8 @@ export const ChatModal: React.FC<ChatModalProps> = ({ groupId, groupName, curren
                   className={`flex ${message.userId === currentUser.id ? 'justify-end' : 'justify-start'}`}
                 >
                   <div
-                    className={`flex items-end space-x-2 max-w-xs ${
-                      message.userId === currentUser.id ? 'flex-row-reverse space-x-reverse' : ''
-                    }`}
+                    className={`flex items-end space-x-2 max-w-xs ${message.userId === currentUser.id ? 'flex-row-reverse space-x-reverse' : ''
+                      }`}
                   >
                     <img
                       src={message.userAvatar}
@@ -185,22 +185,20 @@ export const ChatModal: React.FC<ChatModalProps> = ({ groupId, groupName, curren
                       className="w-8 h-8 rounded-full flex-shrink-0 object-cover"
                     />
                     <div
-                      className={`px-4 py-2 rounded-lg ${
-                        message.userId === currentUser.id
+                      className={`px-4 py-2 rounded-lg ${message.userId === currentUser.id
                           ? 'bg-emerald-500 text-white'
                           : 'bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-slate-100'
-                      }`}
+                        }`}
                     >
                       {message.userId !== currentUser.id && (
                         <p className="text-[10px] font-bold opacity-75 mb-1">{message.userName}</p>
                       )}
                       <p className="text-sm break-words">{message.content}</p>
                       <p
-                        className={`text-[10px] mt-1 ${
-                          message.userId === currentUser.id
+                        className={`text-[10px] mt-1 ${message.userId === currentUser.id
                             ? 'text-emerald-100'
                             : 'text-slate-500 dark:text-slate-400'
-                        }`}
+                          }`}
                       >
                         {new Date(message.timestamp).toLocaleTimeString('es-ES', {
                           hour: '2-digit',
