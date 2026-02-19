@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { X, Send, Loader2 } from 'lucide-react';
+import { X, Send, Loader2, Check, CheckCheck } from 'lucide-react';
 import { io, Socket } from 'socket.io-client';
 import { User } from '../types';
 import * as api from '../services/api';
@@ -71,7 +71,7 @@ export const ChatModal: React.FC<ChatModalProps> = ({ groupId, groupName, curren
       socket.emit('join-group', groupId);
     });
 
-    socket.on('receive-message', (message: Message) => {
+    socket.on('new-message', (message: Message) => {
       setMessages(prev => [...prev, message]);
     });
 
@@ -156,68 +156,86 @@ export const ChatModal: React.FC<ChatModalProps> = ({ groupId, groupName, curren
         </div>
 
         {/* Messages */}
-        <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-white dark:bg-slate-950">
-          {isLoading ? (
-            <div className="flex items-center justify-center h-full">
-              <Loader2 className="animate-spin text-emerald-500" size={32} />
-            </div>
-          ) : messages.length === 0 ? (
-            <div className="flex items-center justify-center h-full text-center">
-              <div>
-                <p className="text-slate-500 dark:text-slate-400 text-sm">No hay mensajes aún</p>
-                <p className="text-slate-400 dark:text-slate-500 text-xs mt-2">¡Sé el primero en escribir!</p>
+        <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-[#e5ddd5] dark:bg-slate-950 relative">
+          {/* Fondo estilo WhatsApp (Sutil) */}
+          <div className="absolute inset-0 opacity-[0.06] pointer-events-none grayscale invert dark:invert-0" style={{ backgroundImage: 'url("https://w7.pngwing.com/pngs/415/703/png-transparent-whatsapp-social-media-message-computer-icons-design-text-black-whatsapp-pattern-thumbnail.png")', backgroundSize: '400px' }}></div>
+
+          <div className="relative z-10 space-y-4">
+            {isLoading ? (
+              <div className="flex items-center justify-center h-48">
+                <Loader2 className="animate-spin text-emerald-600" size={32} />
               </div>
-            </div>
-          ) : (
-            <>
-              {messages.map((message) => (
-                <div
-                  key={message.id}
-                  className={`flex ${message.userId === currentUser.id ? 'justify-end' : 'justify-start'}`}
-                >
-                  <div
-                    className={`flex items-end space-x-2 max-w-xs ${message.userId === currentUser.id ? 'flex-row-reverse space-x-reverse' : ''
-                      }`}
-                  >
-                    <img
-                      src={message.userAvatar}
-                      alt={message.userName}
-                      className="w-8 h-8 rounded-full flex-shrink-0 object-cover"
-                    />
+            ) : messages.length === 0 ? (
+              <div className="flex items-center justify-center h-48 text-center bg-white/50 dark:bg-slate-900/50 backdrop-blur-sm rounded-2xl p-6">
+                <div>
+                  <p className="text-slate-600 dark:text-slate-400 font-bold uppercase tracking-widest text-[10px]">No hay mensajes aún</p>
+                  <p className="text-slate-400 dark:text-slate-500 text-[10px] mt-1 italic">¡Di hola al grupo!</p>
+                </div>
+              </div>
+            ) : (
+              <>
+                {messages.map((message) => {
+                  const isMe = message.userId === currentUser.id;
+                  return (
                     <div
-                      className={`px-4 py-2 rounded-lg ${message.userId === currentUser.id
-                        ? 'bg-emerald-500 text-white'
-                        : 'bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-slate-100'
-                        }`}
+                      key={message.id || Math.random()}
+                      className={`flex ${isMe ? 'justify-end' : 'justify-start'} animate-in fade-in slide-in-from-bottom-2 duration-300`}
                     >
-                      {message.userId !== currentUser.id && (
-                        <p className="text-[10px] font-bold opacity-75 mb-1">{message.userName}</p>
-                      )}
-                      <p className="text-sm break-words">{message.content}</p>
-                      <p
-                        className={`text-[10px] mt-1 ${message.userId === currentUser.id
-                          ? 'text-emerald-100'
-                          : 'text-slate-500 dark:text-slate-400'
-                          }`}
-                      >
-                        {new Date(message.timestamp).toLocaleTimeString('es-ES', {
-                          hour: '2-digit',
-                          minute: '2-digit'
-                        })}
-                        {message.edited && ' (editado)'}
-                      </p>
+                      <div className={`flex items-start max-w-[85%] ${isMe ? 'flex-row-reverse' : 'flex-row'}`}>
+                        {/* Avatar */}
+                        {!isMe && (
+                          <div className="flex-shrink-0 mr-2 mt-1">
+                            <img
+                              src={message.userAvatar || `https://ui-avatars.com/api/?name=${message.userName}&background=random`}
+                              alt={message.userName}
+                              className="w-8 h-8 rounded-full border border-white dark:border-slate-800 shadow-sm object-cover"
+                            />
+                          </div>
+                        )}
+
+                        {/* Burbuja */}
+                        <div
+                          className={`relative px-3 py-1.5 rounded-xl shadow-sm ${isMe
+                              ? 'bg-[#dcf8c6] dark:bg-emerald-900 text-slate-800 dark:text-slate-100 rounded-tr-none'
+                              : 'bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100 rounded-tl-none'
+                            }`}
+                        >
+                          {!isMe && (
+                            <p className="text-[10px] font-black text-emerald-600 dark:text-emerald-400 mb-0.5">
+                              {message.userName}
+                            </p>
+                          )}
+
+                          <div className="flex items-end justify-between gap-4">
+                            <p className="text-sm leading-relaxed whitespace-pre-wrap pb-1">
+                              {message.content}
+                            </p>
+                            <div className="flex items-center space-x-0.5 mb-[-2px]">
+                              <span className={`text-[9px] min-w-fit ${isMe ? 'text-emerald-700/60 dark:text-emerald-300/60' : 'text-slate-400'}`}>
+                                {new Date(message.timestamp).toLocaleTimeString('es-ES', {
+                                  hour: '2-digit',
+                                  minute: '2-digit'
+                                })}
+                              </span>
+                              {isMe && (
+                                <CheckCheck size={13} className="text-blue-500" />
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
                     </div>
+                  );
+                })}
+                {typingUsers.size > 0 && (
+                  <div className="flex items-center space-x-2 bg-white/50 dark:bg-slate-900/50 backdrop-blur-sm px-3 py-1 rounded-full text-emerald-600 dark:text-emerald-400 text-[10px] font-bold italic w-fit">
+                    <span>{Array.from(typingUsers).join(', ')} está escribiendo...</span>
                   </div>
-                </div>
-              ))}
-              {typingUsers.size > 0 && (
-                <div className="flex items-center space-x-2 text-slate-500 dark:text-slate-400 text-sm italic">
-                  <span>{Array.from(typingUsers).join(', ')} está escribiendo...</span>
-                </div>
-              )}
-              <div ref={messagesEndRef} />
-            </>
-          )}
+                )}
+                <div ref={messagesEndRef} />
+              </>
+            )}
+          </div>
         </div>
 
         {/* Input */}
