@@ -14,7 +14,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ onClose, onLogin, allowClo
   const [step, setStep] = useState<'credentials' | 'code'>('credentials');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [name, setName] = useState('');
+  const [name, setName] = useState(''); // required for registration
   const [code, setCode] = useState('');
   const [message, setMessage] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -31,7 +31,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ onClose, onLogin, allowClo
 
   const handleCredentialsSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!email.trim() || !password.trim()) return;
+    if (!email.trim() || !password.trim() || !name.trim()) return;
     setLoading(true);
     setMessage(null);
     try {
@@ -44,7 +44,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ onClose, onLogin, allowClo
         // register flow
         try {
           const resp: any = await api.register({
-            name: name.trim() || email.split('@')[0],
+            name: name.trim(),
             email: email.trim(),
             password
           });
@@ -172,7 +172,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ onClose, onLogin, allowClo
                   <User className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500 group-focus-within:text-emerald-500 transition-colors" size={20} />
                   <input
                     type="text"
-                    placeholder="Tu nombre (opcional)"
+                    placeholder="Tu nombre"
                     value={name}
                     onChange={(e) => setName(e.target.value)}
                     className="w-full pl-12 pr-4 py-4 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl focus:ring-4 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none transition-all text-lg font-bold text-slate-800 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-600"
@@ -205,7 +205,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ onClose, onLogin, allowClo
 
             <button
               type="submit"
-              disabled={loading || (step === 'credentials' ? !email.trim() || !password : !code.trim())}
+              disabled={loading || (step === 'credentials' ? !email.trim() || !password || !name.trim() : !code.trim())}
               className="w-full py-4 bg-emerald-600 text-white font-bold rounded-2xl shadow-lg shadow-emerald-200 dark:shadow-emerald-900/50 hover:bg-emerald-700 hover:scale-[1.02] transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none flex items-center justify-center space-x-2"
             >
               <span>{step === 'credentials' ? 'Continuar' : 'Verificar'}</span>

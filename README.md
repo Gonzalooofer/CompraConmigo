@@ -55,7 +55,7 @@ A simple Express/Mongoose API lives in the `server/` folder. It exposes CRUD end
 El sistema de autenticación ha sido ampliado para soportar registro/inicio con **email y contraseña**, acompañado de un código de verificación enviado por Gmail.
 
 1. **Registro**
-   - El usuario introduce email, contraseña y nombre (opcional).
+   - El usuario introduce email, contraseña y nombre (obligatorio).
    - Si el correo no existe en la base de datos se crea un nuevo `User` con la contraseña
      almacenada como hash (bcrypt) y se genera un código de verificación válido 15 minutos.
    - El servidor intenta enviar dicho código al correo; si el envío falla la cuenta sigue siendo
