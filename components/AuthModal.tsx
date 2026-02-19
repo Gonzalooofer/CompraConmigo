@@ -4,18 +4,17 @@ import { X, User, ArrowRight } from 'lucide-react';
 
 interface AuthModalProps {
   onClose: () => void;
-  onLogin: (name: string) => Promise<void> | void;
+  onLogin: (name: string) => void;
   allowClose?: boolean;
-  isLoading?: boolean;
 }
 
-export const AuthModal: React.FC<AuthModalProps> = ({ onClose, onLogin, allowClose = true, isLoading = false }) => {
+export const AuthModal: React.FC<AuthModalProps> = ({ onClose, onLogin, allowClose = true }) => {
   const [name, setName] = useState('');
 
-  const handleSubmit = async (e?: React.FormEvent) => {
+  const handleSubmit = (e?: React.FormEvent) => {
     e?.preventDefault();
-    if (!name.trim() || isLoading) return;
-    await onLogin(name.trim());
+    if (!name.trim()) return;
+    onLogin(name.trim());
     onClose();
   };
 
@@ -54,16 +53,15 @@ export const AuthModal: React.FC<AuthModalProps> = ({ onClose, onLogin, allowClo
                 onChange={(e) => setName(e.target.value)}
                 className="w-full pl-12 pr-4 py-4 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl focus:ring-4 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none transition-all text-lg font-bold text-slate-800 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-600"
                 autoFocus
-                disabled={isLoading}
               />
             </div>
 
             <button 
               type="submit"
-              disabled={!name.trim() || isLoading}
+              disabled={!name.trim()}
               className="w-full py-4 bg-emerald-600 text-white font-bold rounded-2xl shadow-lg shadow-emerald-200 dark:shadow-emerald-900/50 hover:bg-emerald-700 hover:scale-[1.02] transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none flex items-center justify-center space-x-2"
             >
-              <span>{isLoading ? 'Entrando...' : 'Entrar'}</span>
+              <span>Entrar</span>
               <ArrowRight size={20} />
             </button>
           </form>
