@@ -14,6 +14,7 @@ import settlementRoutes from './routes/settlement';
 import authRoutes from './routes/auth';
 import invitationRoutes from './routes/invitation';
 import messageRoutes from './routes/message';
+import twoFARoutes from './routes/twofa';
 
 const app = express();
 const httpServer = createServer(app);
@@ -44,6 +45,7 @@ app.use('/api/items', itemRoutes);
 app.use('/api/settlements', settlementRoutes);
 app.use('/api/invitations', invitationRoutes);
 app.use('/api/messages', messageRoutes);
+app.use('/api/2fa', twoFARoutes);
 
 // Socket.IO - Real-time chat
 const connectedUsers = new Map<string, string>(); // userId -> socketId

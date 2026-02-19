@@ -19,7 +19,13 @@ const userSchema = new Schema({
   verificationExpires: { type: Date },
   lastCodeSentAt: { type: Date },
   loginCode: { type: String },
-  loginCodeExpires: { type: Date }
+  loginCodeExpires: { type: Date },
+
+  // 2FA TOTP
+  totpSecret: { type: String }, // TOTP secret key
+  twoFAEnabled: { type: Boolean, default: false },
+  backupCodes: [{ type: String }], // Array of backup codes
+  rememberMeToken: { type: String } // Token for "remember me" login
 }, { timestamps: true });
 
 export default model('User', userSchema);

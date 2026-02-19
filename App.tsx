@@ -386,29 +386,90 @@ const App: React.FC = () => {
   // 1. Show welcome screen if no user
   if (!currentUser) {
     return (
-      <div className="min-h-screen bg-slate-50 dark:bg-slate-950 flex flex-col justify-center items-center transition-colors duration-300 p-4">
-        <div className="max-w-sm w-full space-y-8 text-center">
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-950 dark:to-slate-900 flex flex-col justify-center items-center transition-colors duration-300 p-4">
+        <div className="max-w-2xl w-full space-y-12 text-center">
           {/* Logo section */}
-          <div className="space-y-4">
-            <div className="w-24 h-24 bg-emerald-100 dark:bg-emerald-900/30 rounded-3xl flex items-center justify-center mx-auto shadow-xl shadow-emerald-200 dark:shadow-emerald-900/50">
-              <span className="text-5xl">🛒</span>
+          <div className="space-y-4 animate-in fade-in slide-in-from-top duration-500">
+            <div className="w-24 h-24 bg-gradient-to-br from-emerald-100 to-teal-100 dark:from-emerald-900/40 dark:to-teal-900/40 rounded-3xl flex items-center justify-center mx-auto shadow-2xl shadow-emerald-200/50 dark:shadow-emerald-900/50">
+              <span className="text-6xl">🛒</span>
             </div>
-            <h1 className="text-4xl font-black text-slate-800 dark:text-white">CompraConmigo</h1>
-            <p className="text-slate-500 dark:text-slate-400 text-sm leading-relaxed">
-              Organiza tus compras en grupo, divide gastos y únete a tus amigos fácilmente.
+            <h1 className="text-5xl font-black text-slate-800 dark:text-white tracking-tight">CompraConmigo</h1>
+            <p className="text-slate-600 dark:text-slate-300 text-base leading-relaxed max-w-md mx-auto">
+              Organiza tus compras en grupo, divide gastos automáticamente y sincroniza con tus amigos en tiempo real.
             </p>
           </div>
 
+          {/* Features Grid */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 animate-in fade-in slide-in-from-bottom duration-700">
+            <div className="p-6 bg-white dark:bg-slate-900/50 rounded-2xl border border-emerald-100 dark:border-emerald-900/30 hover:shadow-lg transition-all hover:-translate-y-1">
+              <div className="w-12 h-12 bg-emerald-100 dark:bg-emerald-900/30 rounded-xl flex items-center justify-center mb-3 mx-auto">
+                <span className="text-2xl">📝</span>
+              </div>
+              <h3 className="font-bold text-slate-800 dark:text-white mb-1">Listas Compartidas</h3>
+              <p className="text-sm text-slate-500 dark:text-slate-400">Crea y comparte listas de compra con tu grupo en tiempo real</p>
+            </div>
+
+            <div className="p-6 bg-white dark:bg-slate-900/50 rounded-2xl border border-teal-100 dark:border-teal-900/30 hover:shadow-lg transition-all hover:-translate-y-1">
+              <div className="w-12 h-12 bg-teal-100 dark:bg-teal-900/30 rounded-xl flex items-center justify-center mb-3 mx-auto">
+                <span className="text-2xl">💰</span>
+              </div>
+              <h3 className="font-bold text-slate-800 dark:text-white mb-1">División de Gastos</h3>
+              <p className="text-sm text-slate-500 dark:text-slate-400">Calcula automáticamente quién debe pagar a quién</p>
+            </div>
+
+            <div className="p-6 bg-white dark:bg-slate-900/50 rounded-2xl border border-cyan-100 dark:border-cyan-900/30 hover:shadow-lg transition-all hover:-translate-y-1">
+              <div className="w-12 h-12 bg-cyan-100 dark:bg-cyan-900/30 rounded-xl flex items-center justify-center mb-3 mx-auto">
+                <span className="text-2xl">👥</span>
+              </div>
+              <h3 className="font-bold text-slate-800 dark:text-white mb-1">Chat Grupal</h3>
+              <p className="text-sm text-slate-500 dark:text-slate-400">Comunícate con tu grupo directamente en la app</p>
+            </div>
+          </div>
+
+          {/* How it works */}
+          <div className="bg-white dark:bg-slate-900/50 rounded-2xl p-8 border border-slate-200 dark:border-slate-800 animate-in fade-in duration-900">
+            <h3 className="text-xl font-bold text-slate-800 dark:text-white mb-6">Cómo funciona en 3 pasos</h3>
+            <div className="space-y-4">
+              <div className="flex gap-4">
+                <div className="flex-shrink-0 w-10 h-10 rounded-full bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center font-bold text-emerald-600 dark:text-emerald-400">
+                  1
+                </div>
+                <div className="text-left">
+                  <p className="font-bold text-slate-800 dark:text-white">Crea una cuenta</p>
+                  <p className="text-sm text-slate-500 dark:text-slate-400">Regístrate con tu email en segundos. Protegemos tu cuenta con 2FA.</p>
+                </div>
+              </div>
+              <div className="flex gap-4">
+                <div className="flex-shrink-0 w-10 h-10 rounded-full bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center font-bold text-emerald-600 dark:text-emerald-400">
+                  2
+                </div>
+                <div className="text-left">
+                  <p className="font-bold text-slate-800 dark:text-white">Crea o únete a un grupo</p>
+                  <p className="text-sm text-slate-500 dark:text-slate-400">Invita a tus amigos o únete a un grupo existente con un enlace.</p>
+                </div>
+              </div>
+              <div className="flex gap-4">
+                <div className="flex-shrink-0 w-10 h-10 rounded-full bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center font-bold text-emerald-600 dark:text-emerald-400">
+                  3
+                </div>
+                <div className="text-left">
+                  <p className="font-bold text-slate-800 dark:text-white">Agrega productos y divide gastos</p>
+                  <p className="text-sm text-slate-500 dark:text-slate-400">Escanea códigos de barras o añade productos manualmente. Los cálculos son automáticos.</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
           {/* Action buttons */}
-          <div className="space-y-3">
+          <div className="space-y-3 animate-in fade-in slide-in-from-bottom duration-1000">
             <button
               onClick={() => {
                 setAuthMode('register');
                 setShowAuthModal(true);
               }}
-              className="w-full py-4 bg-emerald-600 text-white rounded-2xl font-bold text-lg shadow-lg shadow-emerald-200 dark:shadow-emerald-900/50 hover:bg-emerald-700 hover:scale-105 transition-all active:scale-95"
+              className="w-full py-4 bg-gradient-to-r from-emerald-600 to-teal-600 text-white rounded-2xl font-bold text-lg shadow-lg shadow-emerald-200 dark:shadow-emerald-900/50 hover:from-emerald-700 hover:to-teal-700 hover:scale-105 transition-all active:scale-95"
             >
-              Crear Cuenta
+              Crear Cuenta Gratis
             </button>
 
             <button
@@ -416,8 +477,16 @@ const App: React.FC = () => {
                 setAuthMode('login');
                 setShowAuthModal(true);
               }}
-              className="w-full py-4 bg-white dark:bg-slate-900 text-emerald-600 dark:text-emerald-400 rounded-2xl font-bold text-lg border-2 border-emerald-600 dark:border-emerald-400 hover:bg-emerald-50 dark:hover:bg-slate-800 transition-all active:scale-95"
+              className="w-full py-4 bg-white dark:bg-slate-900 text-emerald-600 dark:text-emerald-400 rounded-2xl font-bold text-lg border-2 border-emerald-600 dark:border-emerald-400 hover:bg-emerald-50 dark:hover:bg-slate-800/50 transition-all active:scale-95"
             >
+              Iniciar Sesión
+            </button>
+
+            <p className="text-xs text-slate-500 dark:text-slate-400 pt-2">
+              Tus datos están protegidos con encriptación de extremo a extremo. Nunca compartimos información con terceros.
+            </p>
+          </div>
+        </div>
               Iniciar Sesión
             </button>
           </div>

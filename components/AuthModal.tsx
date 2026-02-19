@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { X, Mail, Key, User, Phone, Globe, MapPin, Code, Camera, Upload, ArrowRight, Loader2 } from 'lucide-react';
+import { X, Mail, Key, User, Phone, Globe, MapPin, Code, Camera, Upload, ArrowRight, Loader2, Shield, Copy, Check } from 'lucide-react';
 import * as api from '../services/api';
 import { User as UserType } from '../types';
 
@@ -15,7 +15,7 @@ const COUNTRIES = ['España', 'Argentina', 'México', 'Colombia', 'Chile', 'Per�
 
 export const AuthModal: React.FC<AuthModalProps> = ({ onClose, onLogin, allowClose = true, mode = 'register' }) => {
   const [isLoginMode, setIsLoginMode] = useState(mode === 'login');
-  const [step, setStep] = useState<'credentials' | 'profile' | 'location' | 'photo' | 'code'>(isLoginMode ? 'credentials' : 'credentials');
+  const [step, setStep] = useState<'credentials' | 'profile' | 'location' | 'photo' | 'totp-setup' | 'totp-login' | 'backup-codes' | 'code'>(isLoginMode ? 'credentials' : 'credentials');
   
   // Credentials
   const [email, setEmail] = useState('');
@@ -33,11 +33,21 @@ export const AuthModal: React.FC<AuthModalProps> = ({ onClose, onLogin, allowClo
   // Photo
   const [avatar, setAvatar] = useState('');
   
+  // 2FA
+  const [totpSecret, setTotpSecret] = useState('');
+  const [totpQR, setTotpQR] = useState('');
+  const [backupCodes, setBackupCodes] = useState<string[]>([]);
+  const [totpCode, setTotpCode] = useState('');
+  const [useBackupCode, setUseBackupCode] = useState(false);
+  const [rememberMe, setRememberMe] = useState(false);
+  const [copiedCode, setCopiedCode] = useState<string | null>(null);
+  
   // Verification
   const [code, setCode] = useState('');
   const [message, setMessage] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [resendTimer, setResendTimer] = useState(0);
+  const [userId, setUserId] = useState<string | null>(null); // For 2FA verification
 
   useEffect(() => {
     let timer: NodeJS.Timeout;
@@ -56,13 +66,17 @@ export const AuthModal: React.FC<AuthModalProps> = ({ onClose, onLogin, allowClo
       if (isLoginMode) {
         if (!email.trim() || !password.trim()) return;
         const resp: any = await api.login(email.trim(), password);
-        if (resp.warning) {
-          setMessage('Código enviado, pero hay problemas al enviar el correo.');
+        setUserId(resp.userId || resp.id);
+        
+        // Check if user has 2FA enabled
+        if (resp.twoFAEnabled) {
+          setMessage('Código de autenticación requerido');
+          setStep('totp-login');
         } else {
-          setMessage('Código de inicio de sesión enviado a tu correo.');
+          setMessage(resp.warning ? 'Código enviado con problemas.' : 'Código de inicio de sesión enviado a tu correo.');
+          setStep('code');
+          setResendTimer(60);
         }
-        setStep('code');
-        setResendTimer(60);
       } else {
         // Register - continue to next step
         if (!email.trim() || !password.trim() || !name.trim()) return;
@@ -115,18 +129,65 @@ export const AuthModal: React.FC<AuthModalProps> = ({ onClose, onLogin, allowClo
         city: city || undefined,
         postalCode: postalCode || undefined
       });
-      setMessage(
-        resp.warning
-          ? 'Cuenta creada pero no se pudo enviar el correo.'
-          : 'Cuenta creada. Revisa tu correo para el código.'
-      );
-      setStep('code');
-      setResendTimer(60);
+      setUserId(resp.userId || resp.id);
+      
+      // Setup 2FA - Generate QR and backup codes
+      const twoFASetup: any = await api.setup2FA(resp.userId || resp.id);
+      setTotpSecret(twoFASetup.secret);
+      setTotpQR(twoFASetup.qrCode);
+      setBackupCodes(twoFASetup.backupCodes);
+      
+      setMessage('Escanea el código QR con Google Authenticator o similar');
+      setStep('totp-setup');
     } catch (err: any) {
       setMessage('Error al registrarse.');
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleTOTPSetup = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    setMessage(null);
+
+    try {
+      await api.verify2FA(userId!, totpSecret, totpCode, backupCodes);
+      setMessage('2FA configurado correctamente. Ahora verifica tu email.');
+      setTotpCode('');
+      setStep('code');
+      setResendTimer(60);
+    } catch (err: any) {
+      setMessage('Código TOTP inválido. Intenta nuevamente.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleTOTPLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    setMessage(null);
+
+    try {
+      const resp: any = await api.verifyLogin2FA(userId!, totpCode, useBackupCode, rememberMe);
+      onLogin(resp.user as UserType);
+      if (resp.rememberMeToken) {
+        localStorage.setItem('rememberMeToken', resp.rememberMeToken);
+        localStorage.setItem('rememberMeUserId', userId!);
+      }
+      onClose();
+    } catch (err: any) {
+      setMessage('Código inválido o expirado.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleBackupCodeCopy = (code: string) => {
+    navigator.clipboard.writeText(code);
+    setCopiedCode(code);
+    setTimeout(() => setCopiedCode(null), 2000);
   };
 
   const handleCodeSubmit = async (e: React.FormEvent) => {
@@ -177,7 +238,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ onClose, onLogin, allowClo
   };
 
   const getProgressBarPercentage = () => {
-    const steps = isLoginMode ? ['credentials', 'code'] : ['credentials', 'profile', 'location', 'photo', 'code'];
+    const steps = isLoginMode ? ['credentials', 'totp-login', 'code'] : ['credentials', 'profile', 'location', 'photo', 'totp-setup', 'backup-codes', 'code'];
     const currentIndex = steps.indexOf(step);
     return ((currentIndex + 1) / steps.length) * 100;
   };
@@ -218,6 +279,12 @@ export const AuthModal: React.FC<AuthModalProps> = ({ onClose, onLogin, allowClo
                 ? '¿Dónde vives?'
                 : step === 'photo'
                 ? 'Tu avatar'
+                : step === 'totp-setup'
+                ? 'Seguridad en 2 pasos'
+                : step === 'totp-login'
+                ? 'Verifica tu identidad'
+                : step === 'backup-codes'
+                ? 'Códigos de respaldo'
                 : 'Verifica tu email'}
             </h2>
             <p className="text-sm text-slate-500 dark:text-slate-400">
@@ -231,6 +298,12 @@ export const AuthModal: React.FC<AuthModalProps> = ({ onClose, onLogin, allowClo
                 ? 'País, ciudad y código postal'
                 : step === 'photo'
                 ? 'Sube una foto o genera un avatar'
+                : step === 'totp-setup'
+                ? 'Configura autenticación de dos factores'
+                : step === 'totp-login'
+                ? 'Usa tu autenticador o código de respaldo'
+                : step === 'backup-codes'
+                ? 'Guarda estos códigos por si acaso'
                 : 'Revisa tu correo'}
             </p>
           </div>
@@ -251,6 +324,9 @@ export const AuthModal: React.FC<AuthModalProps> = ({ onClose, onLogin, allowClo
               : step === 'profile' ? handleProfileSubmit
               : step === 'location' ? handleLocationSubmit
               : step === 'photo' ? handlePhotoSubmit
+              : step === 'totp-setup' ? handleTOTPSetup
+              : step === 'totp-login' ? handleTOTPLogin
+              : step === 'backup-codes' ? (() => { setStep('code'); return true; }) as any
               : handleCodeSubmit
             }
             className="space-y-4 pt-2 animate-in fade-in duration-300"
@@ -383,6 +459,90 @@ export const AuthModal: React.FC<AuthModalProps> = ({ onClose, onLogin, allowClo
               </>
             )}
 
+            {step === 'totp-setup' && (
+              <>
+                <div className="flex justify-center mb-4">
+                  {totpQR && <img src={totpQR} alt="TOTP QR Code" className="w-48 h-48 border-2 border-emerald-200 dark:border-emerald-800 rounded-xl p-2 bg-white" />}
+                </div>
+                <p className="text-xs text-slate-500 dark:text-slate-400 text-center">
+                  Escanea este código QR con Google Authenticator, Authy o Microsoft Authenticator
+                </p>
+                <p className="text-xs text-slate-700 dark:text-slate-300 font-mono bg-slate-50 dark:bg-slate-800 p-2 rounded text-center break-all">
+                  {totpSecret}
+                </p>
+                <div className="relative group">
+                  <Code className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500 group-focus-within:text-emerald-500 transition-colors" size={20} />
+                  <input
+                    type="text"
+                    placeholder="Código de 6 dígitos"
+                    value={totpCode}
+                    onChange={(e) => setTotpCode(e.target.value)}
+                    maxLength={6}
+                    className="w-full pl-12 pr-4 py-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-500 outline-none transition-all text-slate-800 dark:text-slate-100 placeholder-slate-400 text-center font-mono tracking-widest"
+                    autoFocus
+                  />
+                </div>
+              </>
+            )}
+
+            {step === 'totp-login' && (
+              <>
+                <div className="relative group">
+                  <Shield className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500 group-focus-within:text-emerald-500 transition-colors" size={20} />
+                  <input
+                    type="text"
+                    placeholder={useBackupCode ? "Código de respaldo" : "Código de 6 dígitos"}
+                    value={totpCode}
+                    onChange={(e) => setTotpCode(e.target.value)}
+                    maxLength={useBackupCode ? 8 : 6}
+                    className="w-full pl-12 pr-4 py-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-500 outline-none transition-all text-slate-800 dark:text-slate-100 placeholder-slate-400 text-center font-mono tracking-widest"
+                    autoFocus
+                  />
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setUseBackupCode(!useBackupCode)}
+                  className="text-xs text-emerald-600 dark:text-emerald-400 hover:underline transition-colors"
+                >
+                  {useBackupCode ? 'Usar código TOTP' : 'Usar código de respaldo'}
+                </button>
+                <label className="flex items-center gap-2 p-3 bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800 rounded-xl cursor-pointer hover:bg-emerald-100 dark:hover:bg-emerald-900/30 transition-colors">
+                  <input
+                    type="checkbox"
+                    checked={rememberMe}
+                    onChange={(e) => setRememberMe(e.target.checked)}
+                    className="w-4 h-4 rounded"
+                  />
+                  <span className="text-sm font-medium text-slate-700 dark:text-slate-300">Recuérdame en este dispositivo</span>
+                </label>
+              </>
+            )}
+
+            {step === 'backup-codes' && (
+              <>
+                <p className="text-sm text-slate-600 dark:text-slate-400 text-center font-medium">
+                  Guarda estos códigos en un lugar seguro. Úsalos si pierdes acceso a tu autenticador.
+                </p>
+                <div className="grid grid-cols-2 gap-2">
+                  {backupCodes.map((code) => (
+                    <button
+                      key={code}
+                      type="button"
+                      onClick={() => handleBackupCodeCopy(code)}
+                      className="p-2 bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors text-xs font-mono text-slate-700 dark:text-slate-300 flex items-center justify-between gap-2"
+                    >
+                      <span>{code}</span>
+                      {copiedCode === code ? (
+                        <Check size={14} className="text-emerald-600" />
+                      ) : (
+                        <Copy size={14} className="text-slate-400" />
+                      )}
+                    </button>
+                  ))}
+                </div>
+              </>
+            )}
+
             {step === 'code' && (
               <>
                 <div className="relative group">
@@ -415,6 +575,9 @@ export const AuthModal: React.FC<AuthModalProps> = ({ onClose, onLogin, allowClo
                 : step === 'profile' ? false
                 : step === 'location' ? false
                 : step === 'photo' ? false
+                : step === 'totp-setup' ? !totpCode.trim()
+                : step === 'totp-login' ? !totpCode.trim()
+                : step === 'backup-codes' ? false
                 : !code.trim()
               )}
               className="w-full py-3 bg-gradient-to-r from-emerald-600 to-teal-600 text-white font-bold rounded-xl shadow-lg shadow-emerald-200 dark:shadow-emerald-900/50 hover:from-emerald-700 hover:to-teal-700 hover:scale-[1.02] transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none flex items-center justify-center gap-2"
@@ -426,7 +589,12 @@ export const AuthModal: React.FC<AuthModalProps> = ({ onClose, onLogin, allowClo
                 </>
               ) : (
                 <>
-                  <span>{step === 'code' ? 'Verificar' : 'Continuar'}</span>
+                  <span>
+                    {step === 'code' || step === 'totp-login' ? 'Verificar' 
+                    : step === 'totp-setup' ? 'Guardar 2FA'
+                    : step === 'backup-codes' ? 'Continuar'
+                    : 'Continuar'}
+                  </span>
                   <ArrowRight size={18} />
                 </>
               )}

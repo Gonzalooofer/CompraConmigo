@@ -82,5 +82,19 @@ export const editMessage = (id: string, content: string, userId: string) =>
 export const deleteMessage = (id: string, userId: string) =>
   request(`/messages/${id}`, { method: 'DELETE', body: JSON.stringify({ userId }) });
 
+// 2FA (Two-Factor Authentication)
+export const setup2FA = (userId: string) =>
+  request('/2fa/setup', { method: 'POST', body: JSON.stringify({ userId }) });
+export const verify2FA = (userId: string, secret: string, code: string, backupCodes: string[]) =>
+  request('/2fa/verify', { method: 'POST', body: JSON.stringify({ userId, secret, code, backupCodes }) });
+export const verifyLogin2FA = (userId: string, code: string, useBackupCode?: boolean, rememberMe?: boolean) =>
+  request('/2fa/verify-login', { method: 'POST', body: JSON.stringify({ userId, code, useBackupCode, rememberMe }) });
+export const getBackupCodes = (userId: string) =>
+  request(`/2fa/backup-codes?userId=${userId}`, { method: 'GET' });
+export const disable2FA = (userId: string) =>
+  request('/2fa/disable', { method: 'POST', body: JSON.stringify({ userId }) });
+export const verifyRememberMe = (userId: string, token: string) =>
+  request('/2fa/verify-remember-me', { method: 'POST', body: JSON.stringify({ userId, token }) });
+
 // Export request for use in other places
 export { request };
