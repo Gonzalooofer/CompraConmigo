@@ -422,8 +422,6 @@ const App: React.FC = () => {
 
   // 3. Main App (Authenticated + Group Selected)
   return (
-
-  return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-950 w-full max-w-md md:max-w-3xl mx-auto relative shadow-[0_0_50px_rgba(0,0,0,0.1)] dark:shadow-[0_0_50px_rgba(0,0,0,0.5)] overflow-hidden flex flex-col border-x border-slate-200 dark:border-slate-800 transition-colors duration-300">
       
       {/* Top Bar Navigation */}
