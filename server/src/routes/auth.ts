@@ -9,9 +9,9 @@ function makeCode() {
   return Math.floor(100000 + Math.random() * 900000).toString();
 }
 
-// register new user (name, email, password)
+// register new user (name, email, password, phoneNumber, country, city, postalCode)
 router.post('/register', async (req, res) => {
-  const { name, email, password } = req.body;
+  const { name, email, password, phoneNumber, country, city, postalCode } = req.body;
   if (!name || !email || !password) {
     return res.status(400).json({ error: 'Name, email and password are required' });
   }
@@ -30,6 +30,10 @@ router.post('/register', async (req, res) => {
       name,
       email,
       passwordHash,
+      phoneNumber: phoneNumber || undefined,
+      country: country || undefined,
+      city: city || undefined,
+      postalCode: postalCode || undefined,
       avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${name}`,
       color: 'bg-purple-500',
       verified: false,

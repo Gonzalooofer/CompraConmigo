@@ -183,13 +183,27 @@ const App: React.FC = () => {
   };
 
   const handleAddItems = async (newItems: ProductItem[]) => {
-    if (!currentGroup) return;
     try {
+      let groupToUse = currentGroup;
+
+      // Si no hay grupo, crear uno automáticamente
+      if (!groupToUse) {
+        const newGroup = await api.createGroup({
+          name: 'Mi Lista de Compra',
+          members: currentUser ? [currentUser.id] : [],
+          icon: '🛒',
+          color: 'bg-emerald-500'
+        });
+        groupToUse = newGroup as Group;
+        setGroups(prev => [...prev, groupToUse!]);
+        setCurrentGroup(groupToUse);
+      }
+
       const created: ProductItem[] = [];
       for (const item of newItems) {
         const saved = await api.createItem({
           ...item,
-          groupId: currentGroup.id
+          groupId: groupToUse.id
         });
         created.push(saved as ProductItem);
       }
@@ -475,13 +489,13 @@ const App: React.FC = () => {
       <header className="bg-white dark:bg-slate-900 px-6 py-4 flex items-center justify-between sticky top-0 z-30 border-b border-slate-100 dark:border-slate-800 transition-colors duration-300">
         <button 
           onClick={() => setShowSidebar(true)}
-          className="flex items-center space-x-3 hover:bg-slate-50 dark:hover:bg-slate-800 p-1 -ml-1 pr-3 rounded-xl transition-colors"
+          className="flex items-center space-x-3 hover:bg-slate-50 dark:hover:bg-slate-800 p-1 -ml-1 pr-3 rounded-xl transition-colors flex-1 min-w-0"
         >
-          <div className="w-10 h-10 bg-emerald-600 rounded-2xl flex items-center justify-center shadow-lg shadow-emerald-200 dark:shadow-emerald-900/50">
+          <div className="w-10 h-10 bg-emerald-600 rounded-2xl flex items-center justify-center shadow-lg shadow-emerald-200 dark:shadow-emerald-900/50 flex-shrink-0">
              <Menu className="text-white" size={20} />
           </div>
-          <div className="text-left group relative">
-            <h1 className="text-lg font-black text-slate-800 dark:text-white leading-tight">CompraConmigo</h1>
+          <div className="text-left min-w-0">
+            <h1 className="text-lg font-black text-slate-800 dark:text-white leading-tight truncate">CompraConmigo</h1>
             
             {/* Group Config Trigger */}
             <div 
@@ -489,20 +503,20 @@ const App: React.FC = () => {
               className="flex items-center text-[10px] font-bold text-slate-400 uppercase tracking-wider cursor-pointer hover:text-emerald-500 transition-colors mt-0.5"
             >
               <span className={`w-1.5 h-1.5 rounded-full mr-1.5 animate-pulse ${currentGroup?.color || 'bg-slate-400'}`}></span>
-              <span className="mr-1">{currentGroup?.name || 'Sin grupo'}</span>
-              <Settings2 size={10} className="ml-0.5" />
+              <span className="truncate">{currentGroup?.name || 'Sin grupo'}</span>
             </div>
           </div>
         </button>
 
         <button 
           onClick={() => setShowSidebar(true)}
-          className="relative group"
+          className="relative group flex-shrink-0"
         >
           <img 
             src={currentUser?.avatar} 
             alt="Profile" 
             className="w-10 h-10 rounded-2xl border-2 border-emerald-100 dark:border-emerald-900 group-hover:border-emerald-500 transition-colors object-cover" 
+            title={currentUser?.email}
           />
         </button>
       </header>
@@ -515,6 +529,7 @@ const App: React.FC = () => {
               items={groupItems} 
               users={users.filter(u => currentGroup.members.includes(u.id))}
               currentGroup={currentGroup}
+              currentUser={currentUser}
               onToggleCheck={handleToggleCheck}
               onDeleteItem={handleDeleteItem}
               onAssignUser={handleAssignUser}

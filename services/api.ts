@@ -62,3 +62,25 @@ export const verifyLoginCode = (email: string, code: string) =>
 export const resendCode = (email: string) =>
   request('/auth/resend', { method: 'POST', body: JSON.stringify({ email }) });
 
+// Invitations
+export const sendInvitation = (data: { groupId: string; toEmail: string; fromUserId: string }) =>
+  request('/invitations/send', { method: 'POST', body: JSON.stringify(data) });
+export const acceptInvitation = (code: string, userId: string) =>
+  request(`/invitations/accept/${code}`, { method: 'POST', body: JSON.stringify({ userId }) });
+export const getPendingInvitations = (userId: string) =>
+  request(`/invitations/pending/${userId}`, { method: 'GET' });
+export const rejectInvitation = (invitationId: string) =>
+  request(`/invitations/reject/${invitationId}`, { method: 'POST' });
+
+// Messages
+export const getMessages = (groupId: string, limit?: number, skip?: number) =>
+  request(`/messages/group/${groupId}?limit=${limit || 50}&skip=${skip || 0}`, { method: 'GET' });
+export const createMessage = (data: { groupId: string; userId: string; userName: string; userAvatar: string; content: string }) =>
+  request('/messages', { method: 'POST', body: JSON.stringify(data) });
+export const editMessage = (id: string, content: string, userId: string) =>
+  request(`/messages/${id}`, { method: 'PUT', body: JSON.stringify({ content, userId }) });
+export const deleteMessage = (id: string, userId: string) =>
+  request(`/messages/${id}`, { method: 'DELETE', body: JSON.stringify({ userId }) });
+
+// Export request for use in other places
+export { request };

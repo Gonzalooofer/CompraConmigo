@@ -2,21 +2,23 @@
 import React, { useMemo, useState, useEffect } from 'react';
 import { ProductItem, User, Group } from '../types';
 import { CATEGORIES } from '../constants';
-import { Trash2, Check, User as UserIcon, TrendingDown, Share2 } from 'lucide-react';
+import { Trash2, Check, User as UserIcon, TrendingDown, Share2, MessageSquare } from 'lucide-react';
 import { PriceComparisonModal } from './PriceComparisonModal';
 import { InviteModal } from './InviteModal';
+import { ChatModal } from './ChatModal';
 
 interface ShoppingListProps {
   items: ProductItem[];
   users: User[];
-  currentGroup: Group; // Added prop
+  currentGroup: Group;
+  currentUser: User | null;
   onToggleCheck: (id: string) => void;
   onDeleteItem: (id: string) => void;
   onAssignUser: (itemId: string, userId: string | undefined) => void;
   onUpdateItem: (id: string, updates: Partial<ProductItem>) => void;
 }
 
-const EditableNumberInput = ({ 
+const EditableNumberInput = ({
   value, 
   onSave, 
   className, 
@@ -66,17 +68,15 @@ export const ShoppingList: React.FC<ShoppingListProps> = ({
   items, 
   users, 
   currentGroup,
-  onToggleCheck, 
+  currentUser,
+  onToggleCheck,
   onDeleteItem,
   onAssignUser,
   onUpdateItem
 }) => {
   const [comparingProduct, setComparingProduct] = useState<string | null>(null);
   const [showInviteModal, setShowInviteModal] = useState(false);
-  const [assigningItemId, setAssigningItemId] = useState<string | null>(null);
-  
-  const groupedItems = useMemo(() => {
-    const groups: Record<string, ProductItem[]> = {};
+  const [showChatModal, setShowChatModal] = useState(false);
     CATEGORIES.forEach(cat => groups[cat] = []);
     items.forEach(item => {
       const cat = CATEGORIES.includes(item.category) ? item.category : 'Otros';
@@ -91,16 +91,27 @@ export const ShoppingList: React.FC<ShoppingListProps> = ({
 
   return (
     <div className="space-y-6 pb-24">
-      {/* Invite Header */}
-      <div className="flex items-center justify-between px-2">
+      {/* Invite & Chat Header */}
+      <div className="flex items-center justify-between px-2 gap-2">
         <h2 className="text-lg font-bold text-slate-700 dark:text-slate-200">Mi Lista</h2>
-        <button 
-          onClick={() => setShowInviteModal(true)}
-          className="flex items-center space-x-2 text-xs font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-900/30 px-3 py-1.5 rounded-full hover:bg-emerald-100 dark:hover:bg-emerald-900/50 transition-colors"
-        >
-          <Share2 size={14} />
-          <span>INVITAR AMIGOS</span>
-        </button>
+        <div className="flex gap-2">
+          <button 
+            onClick={() => setShowChatModal(true)}
+            className="flex items-center space-x-1 text-xs font-bold text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-900/30 px-3 py-1.5 rounded-full hover:bg-indigo-100 dark:hover:bg-indigo-900/50 transition-colors"
+            title="Abrir chat del grupo"
+          >
+            <MessageSquare size={14} />
+            <span>CHAT</span>
+          </button>
+          <button 
+            onClick={() => setShowInviteModal(true)}
+            className="flex items-center space-x-1 text-xs font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-900/30 px-3 py-1.5 rounded-full hover:bg-emerald-100 dark:hover:bg-emerald-900/50 transition-colors"
+            title="Invitar amigos al grupo"
+          >
+            <Share2 size={14} />
+            <span>INVITAR</span>
+          </button>
+        </div>
       </div>
       
       {/* Summary Header */}
@@ -279,11 +290,21 @@ export const ShoppingList: React.FC<ShoppingListProps> = ({
         />
       )}
 
-      {showInviteModal && (
+      {showInviteModal && currentUser && (
         <InviteModal 
           onClose={() => setShowInviteModal(false)}
           groupName={currentGroup.name}
           groupId={currentGroup.id}
+          currentUserId={currentUser.id}
+        />
+      )}
+
+      {showChatModal && currentUser && (
+        <ChatModal 
+          groupId={currentGroup.id}
+          groupName={currentGroup.name}
+          currentUser={currentUser}
+          onClose={() => setShowChatModal(false)}
         />
       )}
     </div>

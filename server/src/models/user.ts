@@ -2,11 +2,14 @@ import { Schema, model } from 'mongoose';
 
 const userSchema = new Schema({
   name: { type: String, required: true },
-  avatar: { type: String, required: true },
+  avatar: { type: String }, // Optional now
   color: { type: String, required: true },
   // email is optional for legacy users; when present it must be unique
   email: { type: String, unique: true, sparse: true },
   phoneNumber: { type: String },
+  country: { type: String },
+  city: { type: String },
+  postalCode: { type: String },
   plan: { type: String, enum: ['free', 'premium', 'family'], default: 'free' },
 
   // authentication/verification fields

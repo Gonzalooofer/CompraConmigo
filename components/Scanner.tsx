@@ -90,47 +90,61 @@ export const Scanner: React.FC<ScannerProps> = ({ onAddItems, onClose }) => {
 
   return (
     <div className="fixed inset-0 z-50 bg-white dark:bg-slate-950 flex flex-col transition-colors duration-300">
-      <div className="px-4 py-4 flex items-center justify-between border-b border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-900">
-        <h2 className="text-lg font-bold text-slate-800 dark:text-slate-100">Agregar productos</h2>
-        <button onClick={onClose} className="p-2 hover:bg-slate-200 dark:hover:bg-slate-800 rounded-full transition-colors">
+      <div className="px-6 py-4 flex items-center justify-between border-b border-slate-100 dark:border-slate-800 bg-gradient-to-r from-indigo-50 to-purple-50 dark:from-slate-900 dark:to-slate-800">
+        <div>
+          <h2 className="text-lg font-bold text-slate-800 dark:text-slate-100">Agregar productos</h2>
+          <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Escribe una lista y nosotros hacemos el resto</p>
+        </div>
+        <button onClick={onClose} className="p-2 hover:bg-indigo-200 dark:hover:bg-slate-700 rounded-full transition-colors">
           <X size={20} className="text-slate-600 dark:text-slate-400" />
         </button>
       </div>
 
-      <div className="flex-1 p-6 space-y-6">
-        <div className="text-center space-y-2">
-          <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-indigo-600 text-white shadow-lg mb-2 shadow-indigo-200 dark:shadow-indigo-900/50">
+      <div className="flex-1 overflow-y-auto p-6 space-y-6">
+        <div className="text-center space-y-3">
+          <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br from-indigo-500 to-purple-600 text-white shadow-lg shadow-indigo-200 dark:shadow-indigo-900/50">
             <Wand2 size={32} />
           </div>
-          <h3 className="text-xl font-bold text-slate-800 dark:text-slate-200">Asistente Inteligente</h3>
-          <p className="text-slate-500 dark:text-slate-400 text-sm px-6">
-            Escribe tu lista. Nosotros detectamos automáticamente la categoría y estimamos el precio.
-          </p>
+          <div>
+            <h3 className="text-2xl font-black text-slate-800 dark:text-slate-100">Asistente Inteligente</h3>
+            <p className="text-slate-500 dark:text-slate-400 text-sm px-4 mt-2 leading-relaxed">
+              ✨ Escribe tu lista. Nosotros detectamos automáticamente la categoría y estimamos el precio basándonos en la media de mercado.
+            </p>
+          </div>
+        </div>
+
+        <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-xl p-4">
+          <p className="text-sm text-blue-900 dark:text-blue-200 font-medium">💡 Consejo: Separa los productos con comas o líneas nuevas para mejor detección</p>
         </div>
 
         <div className="relative">
             <textarea
             value={inputText}
             onChange={(e) => setInputText(e.target.value)}
-            placeholder="Ej: Leche, 2kg de Patatas, Aceite de oliva..."
-            className="w-full p-4 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 focus:ring-2 focus:ring-indigo-500 outline-none resize-none h-48 text-slate-800 dark:text-slate-200 font-medium shadow-inner"
+            autoFocus
+            placeholder="Ej: Leche, 2kg de Patatas, Aceite de oliva, Pan integral..."
+            className="w-full p-4 rounded-xl bg-slate-50 dark:bg-slate-900 border-2 border-slate-200 dark:border-slate-800 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/30 outline-none resize-none h-48 text-slate-800 dark:text-slate-200 font-medium shadow-inner transition-all"
             />
-            <div className="absolute bottom-3 right-3 text-[10px] text-slate-400 font-bold bg-white dark:bg-slate-800 px-2 py-1 rounded-lg border border-slate-100 dark:border-slate-700">
-                AUTO-PRECIO ACTIVADO
+            <div className="absolute top-3 right-3 text-[10px] text-slate-400 font-bold bg-white dark:bg-slate-800 px-3 py-1.5 rounded-lg border border-slate-100 dark:border-slate-700 flex items-center space-x-1">
+              <span className="w-1.5 h-1.5 bg-green-500 rounded-full inline-block"></span>
+              <span>PRECIO AUTO</span>
+            </div>
+            <div className="absolute bottom-3 right-3 text-xs text-slate-400 font-medium">
+              {inputText.split(/[\n,]+/).filter(line => line.trim().length > 0).length} productos
             </div>
         </div>
       </div>
 
-      <div className="p-4 bg-white dark:bg-slate-900 border-t border-slate-100 dark:border-slate-800 safe-area-pb">
+      <div className="p-6 bg-white dark:bg-slate-900 border-t border-slate-100 dark:border-slate-800 space-y-3 safe-area-pb">
         <button
           onClick={handleAddManual}
           disabled={isProcessing || !inputText.trim()}
-          className="w-full py-4 bg-indigo-600 text-white rounded-xl font-bold text-lg shadow-lg shadow-indigo-200 dark:shadow-indigo-900/50 hover:bg-indigo-700 disabled:opacity-50 flex items-center justify-center space-x-2 transition-all active:scale-95"
+          className="w-full py-4 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-xl font-bold text-lg shadow-lg shadow-indigo-200 dark:shadow-indigo-900/50 hover:from-indigo-700 hover:to-purple-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2 transition-all active:scale-95"
         >
           {isProcessing ? (
             <>
-              <Loader2 className="animate-spin" />
-              <span>Calculando precios...</span>
+              <Loader2 className="animate-spin" size={20} />
+              <span>Analizando...</span>
             </>
           ) : (
             <>
@@ -138,6 +152,12 @@ export const Scanner: React.FC<ScannerProps> = ({ onAddItems, onClose }) => {
               <span>Generar Lista</span>
             </>
           )}
+        </button>
+        <button
+          onClick={onClose}
+          className="w-full py-3 text-slate-600 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 font-medium rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+        >
+          Cancelar
         </button>
       </div>
     </div>
