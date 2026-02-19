@@ -66,13 +66,41 @@ export const ChatModal: React.FC<ChatModalProps> = ({ groupId, groupName, curren
     socketRef.current = socket;
 
     socket.on('connect', () => {
-      console.log('Connected to socket');
+      console.log('📱 Connected to socket:', socket.id);
       socket.emit('register-user', currentUser.id);
       socket.emit('join-group', groupId);
     });
 
+    socket.on('connect_error', (err) => {
+      console.error('❌ Socket connection error:', err);
+      // Intentar reconectar con puerto 5000 si falla origin normal
+      if (socketUrl === window.location.origin) {
+        console.log('🔄 Retrying with port 5000...');
+        const fallbackUrl = `${window.location.protocol}//${window.location.hostname}:5000`;
+        socket.io.uri = fallbackUrl;
+      }
+    });
+
     socket.on('new-message', (message: Message) => {
-      setMessages(prev => [...prev, message]);
+      console.log('📩 New message received via socket:', message);
+      setMessages(prev => {
+        // Si el mensaje es mío, buscamos si hay uno optimista para reemplazarlo
+        const isFromMe = message.userId === currentUser.id;
+        if (isFromMe) {
+          const optimisticIndex = prev.findIndex(m =>
+            m.id.startsWith('optimistic-') && m.content === message.content
+          );
+          if (optimisticIndex !== -1) {
+            const next = [...prev];
+            next[optimisticIndex] = message; // Reemplazar temporal por real con ID de BD
+            return next;
+          }
+        }
+
+        // Evitar duplicados por ID real
+        if (prev.some(m => m.id === message.id)) return prev;
+        return [...prev, message];
+      });
     });
 
     socket.on('user-typing', (data: { userId: string; userName: string }) => {
@@ -110,6 +138,19 @@ export const ChatModal: React.FC<ChatModalProps> = ({ groupId, groupName, curren
     setInputValue('');
 
     try {
+      console.log('📤 Sending message via socket:', { groupId, content: messageText });
+
+      // Actualización optimista
+      const optimisticMessage: Message = {
+        id: `optimistic-${Date.now()}`,
+        userId: currentUser.id,
+        userName: currentUser.name,
+        userAvatar: currentUser.avatar,
+        content: messageText,
+        timestamp: new Date()
+      };
+      setMessages(prev => [...prev, optimisticMessage]);
+
       socketRef.current.emit('send-message', {
         groupId,
         content: messageText,
@@ -117,7 +158,7 @@ export const ChatModal: React.FC<ChatModalProps> = ({ groupId, groupName, curren
         userAvatar: currentUser.avatar
       });
     } catch (err) {
-      console.error('Error sending message:', err);
+      console.error('❌ Error sending message:', err);
       setInputValue(messageText);
     } finally {
       setIsSending(false);
@@ -196,8 +237,8 @@ export const ChatModal: React.FC<ChatModalProps> = ({ groupId, groupName, curren
                         {/* Burbuja */}
                         <div
                           className={`relative px-3 py-1.5 rounded-xl shadow-sm ${isMe
-                              ? 'bg-[#dcf8c6] dark:bg-emerald-900 text-slate-800 dark:text-slate-100 rounded-tr-none'
-                              : 'bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100 rounded-tl-none'
+                            ? 'bg-[#dcf8c6] dark:bg-emerald-900 text-slate-800 dark:text-slate-100 rounded-tr-none'
+                            : 'bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100 rounded-tl-none'
                             }`}
                         >
                           {!isMe && (

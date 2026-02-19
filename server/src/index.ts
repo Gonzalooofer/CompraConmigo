@@ -74,10 +74,11 @@ io.on('connection', (socket) => {
 
   // Enviar mensaje en el chat
   socket.on('send-message', async (data: { groupId: string; content: string; userName: string; userAvatar: string }) => {
+    console.log(`💬 Processing send-message from ${socket.id} for group ${data.groupId}`);
     try {
       const userId = (socket as any).userId;
       if (!userId) {
-        console.error('❌ User not registered on socket');
+        console.error('❌ User not registered on socket:', socket.id);
         socket.emit('message-error', { error: 'No autenticado en el socket' });
         return;
       }
@@ -92,9 +93,10 @@ io.on('connection', (socket) => {
         timestamp: new Date()
       });
       await message.save();
+      console.log(`💾 Message saved to DB: ${message._id}`);
 
       // Emitir a todos en la sala (incluyendo al remitente para confirmación)
-      io.to(data.groupId).emit('new-message', {
+      const broadcastData = {
         id: message._id,
         groupId: data.groupId,
         userId: userId,
@@ -102,9 +104,12 @@ io.on('connection', (socket) => {
         userAvatar: data.userAvatar,
         content: data.content,
         timestamp: message.timestamp
-      });
+      };
+
+      console.log(`📢 Broadcasting message to group ${data.groupId}`);
+      io.to(data.groupId).emit('new-message', broadcastData);
     } catch (err) {
-      console.error('Error saving message:', err);
+      console.error('❌ Error saving message:', err);
       socket.emit('message-error', { error: 'Failed to save message' });
     }
   });
