@@ -1,4 +1,5 @@
 import { Router, Request, Response } from 'express';
+import crypto from 'crypto';
 import speakeasy from 'speakeasy';
 import QRCode from 'qrcode';
 import User from '../models/user';
@@ -130,7 +131,9 @@ router.post('/verify-login', async (req: Request, res: Response) => {
         name: user.name,
         email: user.email,
         avatar: user.avatar,
-        color: user.color
+        color: user.color,
+        twoFAEnabled: user.twoFAEnabled,
+        plan: user.plan
       }
     });
   } catch (err: any) {
@@ -192,7 +195,9 @@ router.post('/verify-remember-me', async (req: Request, res: Response) => {
         name: user.name,
         email: user.email,
         avatar: user.avatar,
-        color: user.color
+        color: user.color,
+        twoFAEnabled: user.twoFAEnabled,
+        plan: user.plan
       }
     });
   } catch (err: any) {

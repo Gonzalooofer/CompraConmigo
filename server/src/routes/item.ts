@@ -9,6 +9,7 @@ router.post('/', async (req, res) => {
     const saved = await item.save();
     res.status(201).json(saved);
   } catch (err) {
+    console.error('❌ Error saving item:', err);
     res.status(400).json({ error: err });
   }
 });

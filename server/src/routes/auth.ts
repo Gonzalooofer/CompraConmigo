@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import bcrypt from 'bcrypt';
+import * as crypto from 'crypto';
 import User from '../models/user';
 import { sendVerificationEmail } from '../utils/mailer';
 
@@ -183,7 +184,7 @@ router.post('/verify-login', async (req, res) => {
   // Generate remember-me token if requested
   let rememberMeToken;
   if (rememberMe) {
-    rememberMeToken = require('crypto').randomBytes(32).toString('hex');
+    rememberMeToken = crypto.randomBytes(32).toString('hex');
     user.rememberMeToken = rememberMeToken;
   }
 
