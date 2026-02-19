@@ -39,6 +39,10 @@ const App: React.FC = () => {
   const [showSidebar, setShowSidebar] = useState(false);
   const [showNewGroupModal, setShowNewGroupModal] = useState(false);
   const [showGroupSettings, setShowGroupSettings] = useState(false);
+  
+  // Auth Modal State
+  const [showAuthModal, setShowAuthModal] = useState(false);
+  const [authMode, setAuthMode] = useState<'login' | 'register'>('register');
 
   // Apply theme class
   // keep theme preference in local storage
@@ -365,15 +369,58 @@ const App: React.FC = () => {
     }
   }, [currentGroup, userGroups]);
 
-  // 1. Force Login if no user
+  // 1. Show welcome screen if no user
   if (!currentUser) {
     return (
-      <div className="min-h-screen bg-slate-50 dark:bg-slate-950 flex flex-col justify-center items-center transition-colors duration-300">
-        <AuthModal 
-          onClose={() => {}} // No-op
-          onLogin={handleLogin} 
-          allowClose={false}
-        />
+      <div className="min-h-screen bg-slate-50 dark:bg-slate-950 flex flex-col justify-center items-center transition-colors duration-300 p-4">
+        <div className="max-w-sm w-full space-y-8 text-center">
+          {/* Logo section */}
+          <div className="space-y-4">
+            <div className="w-24 h-24 bg-emerald-100 dark:bg-emerald-900/30 rounded-3xl flex items-center justify-center mx-auto shadow-xl shadow-emerald-200 dark:shadow-emerald-900/50">
+              <span className="text-5xl">🛒</span>
+            </div>
+            <h1 className="text-4xl font-black text-slate-800 dark:text-white">CompraConmigo</h1>
+            <p className="text-slate-500 dark:text-slate-400 text-sm leading-relaxed">
+              Organiza tus compras en grupo, divide gastos y únete a tus amigos fácilmente.
+            </p>
+          </div>
+
+          {/* Action buttons */}
+          <div className="space-y-3">
+            <button
+              onClick={() => {
+                setAuthMode('register');
+                setShowAuthModal(true);
+              }}
+              className="w-full py-4 bg-emerald-600 text-white rounded-2xl font-bold text-lg shadow-lg shadow-emerald-200 dark:shadow-emerald-900/50 hover:bg-emerald-700 hover:scale-105 transition-all active:scale-95"
+            >
+              Crear Cuenta
+            </button>
+
+            <button
+              onClick={() => {
+                setAuthMode('login');
+                setShowAuthModal(true);
+              }}
+              className="w-full py-4 bg-white dark:bg-slate-900 text-emerald-600 dark:text-emerald-400 rounded-2xl font-bold text-lg border-2 border-emerald-600 dark:border-emerald-400 hover:bg-emerald-50 dark:hover:bg-slate-800 transition-all active:scale-95"
+            >
+              Iniciar Sesión
+            </button>
+          </div>
+
+          <p className="text-xs text-slate-400 dark:text-slate-600 font-medium">
+            Debes estar registrado para empezar a usar la aplicación.
+          </p>
+        </div>
+
+        {showAuthModal && (
+          <AuthModal
+            mode={authMode}
+            onClose={() => setShowAuthModal(false)}
+            onLogin={handleLogin}
+            allowClose={true}
+          />
+        )}
       </div>
     );
   }

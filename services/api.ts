@@ -57,6 +57,8 @@ export const login = (email: string, password: string) =>
   request('/auth/login', { method: 'POST', body: JSON.stringify({ email, password }) });
 export const verifyCode = (email: string, code: string) =>
   request('/auth/verify', { method: 'POST', body: JSON.stringify({ email, code }) });
+export const verifyLoginCode = (email: string, code: string) =>
+  request('/auth/verify-login', { method: 'POST', body: JSON.stringify({ email, code }) });
 export const resendCode = (email: string) =>
   request('/auth/resend', { method: 'POST', body: JSON.stringify({ email }) });
 

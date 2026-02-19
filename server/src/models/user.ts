@@ -14,7 +14,9 @@ const userSchema = new Schema({
   verified: { type: Boolean, default: false },
   verificationCode: { type: String },
   verificationExpires: { type: Date },
-  lastCodeSentAt: { type: Date }
+  lastCodeSentAt: { type: Date },
+  loginCode: { type: String },
+  loginCodeExpires: { type: Date }
 }, { timestamps: true });
 
 export default model('User', userSchema);
