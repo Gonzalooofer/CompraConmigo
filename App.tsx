@@ -432,6 +432,29 @@ const App: React.FC = () => {
             </p>
           </div>
 
+          {/* Action buttons - MOVED HERE */}
+          <div className="space-y-3 max-w-xs mx-auto animate-in fade-in slide-in-from-bottom duration-1000">
+            <button
+              onClick={() => {
+                setAuthMode('register');
+                setShowAuthModal(true);
+              }}
+              className="w-full py-4 bg-gradient-to-r from-emerald-600 to-teal-600 text-white rounded-2xl font-bold text-lg shadow-lg shadow-emerald-200 dark:shadow-emerald-900/50 hover:from-emerald-700 hover:to-teal-700 hover:scale-105 transition-all active:scale-95"
+            >
+              Crear Cuenta Gratis
+            </button>
+
+            <button
+              onClick={() => {
+                setAuthMode('login');
+                setShowAuthModal(true);
+              }}
+              className="w-full py-4 bg-white dark:bg-slate-900 text-emerald-600 dark:text-emerald-400 rounded-2xl font-bold text-lg border-2 border-emerald-600 dark:border-emerald-400 hover:bg-emerald-50 dark:hover:bg-slate-800/50 transition-all active:scale-95"
+            >
+              Iniciar Sesión
+            </button>
+          </div>
+
           {/* Features Grid */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 animate-in fade-in slide-in-from-bottom duration-700">
             <div className="p-6 bg-white dark:bg-slate-900/50 rounded-2xl border border-emerald-100 dark:border-emerald-900/30 hover:shadow-lg transition-all hover:-translate-y-1">
@@ -493,32 +516,9 @@ const App: React.FC = () => {
             </div>
           </div>
 
-          {/* Action buttons */}
-          <div className="space-y-3 animate-in fade-in slide-in-from-bottom duration-1000">
-            <button
-              onClick={() => {
-                setAuthMode('register');
-                setShowAuthModal(true);
-              }}
-              className="w-full py-4 bg-gradient-to-r from-emerald-600 to-teal-600 text-white rounded-2xl font-bold text-lg shadow-lg shadow-emerald-200 dark:shadow-emerald-900/50 hover:from-emerald-700 hover:to-teal-700 hover:scale-105 transition-all active:scale-95"
-            >
-              Crear Cuenta Gratis
-            </button>
-
-            <button
-              onClick={() => {
-                setAuthMode('login');
-                setShowAuthModal(true);
-              }}
-              className="w-full py-4 bg-white dark:bg-slate-900 text-emerald-600 dark:text-emerald-400 rounded-2xl font-bold text-lg border-2 border-emerald-600 dark:border-emerald-400 hover:bg-emerald-50 dark:hover:bg-slate-800/50 transition-all active:scale-95"
-            >
-              Iniciar Sesión
-            </button>
-
-            <p className="text-xs text-slate-500 dark:text-slate-400 pt-2">
-              Tus datos están protegidos con encriptación de extremo a extremo. Nunca compartimos información con terceros.
-            </p>
-          </div>
+          <p className="text-xs text-slate-500 dark:text-slate-400 pt-2">
+            Tus datos están protegidos con encriptación de extremo a extremo. Nunca compartimos información con terceros.
+          </p>
         </div>
 
         {showAuthModal && (
