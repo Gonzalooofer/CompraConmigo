@@ -9,209 +9,236 @@ import { Sidebar } from './components/Sidebar';
 import { NewGroupModal } from './components/NewGroupModal';
 import { GroupSettingsModal } from './components/GroupSettingsModal';
 import { AppView, ProductItem, User, Group, Settlement } from './types';
-import { MOCK_USERS, MOCK_GROUPS, INITIAL_ITEMS } from './constants';
+import {
+  addItems,
+  addMemberManual,
+  bootstrap,
+  createGroup,
+  createSettlement,
+  deleteGroup,
+  deleteItem,
+  deleteUser,
+  joinGroup,
+  login,
+  removeMember,
+  toggleAdmin,
+  updateGroup,
+  updateItem,
+  updateUser
+} from './services/api';
 import { Menu, Settings2, Plus, LogOut } from 'lucide-react';
 import { v4 as uuidv4 } from 'uuid';
 
 const App: React.FC = () => {
-  // Theme state
-  const [darkMode, setDarkMode] = useState(() => {
-    if (typeof window !== 'undefined') {
-        const saved = localStorage.getItem('theme');
-        return saved ? saved === 'dark' : true; 
-    }
-    return true;
-  });
+  const [darkMode, setDarkMode] = useState(true);
 
   const [view, setView] = useState<AppView>(AppView.LIST);
-  const [items, setItems] = useState<ProductItem[]>(() => {
-    const saved = localStorage.getItem('compraConmigo_items');
-    return saved ? JSON.parse(saved) : INITIAL_ITEMS;
-  });
+  const [items, setItems] = useState<ProductItem[]>([]);
   
-  const [users, setUsers] = useState<User[]>(MOCK_USERS);
-  const [groups, setGroups] = useState<Group[]>(MOCK_GROUPS);
+  const [users, setUsers] = useState<User[]>([]);
+  const [groups, setGroups] = useState<Group[]>([]);
   
-  // Settlements State (Pagos realizados)
   const [settlements, setSettlements] = useState<Settlement[]>([]);
   
-  // Auth State
   const [currentUser, setCurrentUser] = useState<User | null>(null);
-  const [currentGroup, setCurrentGroup] = useState<Group | null>(null); // Nullable initially
+  const [currentGroup, setCurrentGroup] = useState<Group | null>(null);
   
   const [showSidebar, setShowSidebar] = useState(false);
   const [showNewGroupModal, setShowNewGroupModal] = useState(false);
   const [showGroupSettings, setShowGroupSettings] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [didProcessInvite, setDidProcessInvite] = useState(false);
 
-  // Apply theme class
   useEffect(() => {
     if (darkMode) {
       document.documentElement.classList.add('dark');
-      localStorage.setItem('theme', 'dark');
     } else {
       document.documentElement.classList.remove('dark');
-      localStorage.setItem('theme', 'light');
     }
   }, [darkMode]);
 
   useEffect(() => {
-    localStorage.setItem('compraConmigo_items', JSON.stringify(items));
-  }, [items]);
+    if (currentUser?.theme) {
+      setDarkMode(currentUser.theme === 'dark');
+    }
+  }, [currentUser]);
 
-  // Derived state: Filter groups for the logged-in user
   const userGroups = currentUser 
     ? groups.filter(g => g.members.includes(currentUser.id)) 
     : [];
 
-  // Derived state: Filter items for the current group
   const groupItems = currentGroup 
     ? items.filter(item => item.groupId === currentGroup.id) 
     : [];
     
-  // Filter settlements for current group
   const groupSettlements = currentGroup
     ? settlements.filter(s => s.groupId === currentGroup.id)
     : [];
 
-  // Handle URL Invitations
   useEffect(() => {
-    if (!currentUser) return;
+    if (!currentUser || didProcessInvite) return;
 
-    const url = new URL(window.location.href);
-    const joinGroupId = url.searchParams.get('join');
-    const joinGroupName = url.searchParams.get('name');
+    const processInvite = async () => {
+      const url = new URL(window.location.href);
+      const joinGroupId = url.searchParams.get('join');
+      const joinGroupName = url.searchParams.get('name');
+      if (!joinGroupId || !joinGroupName) {
+        setDidProcessInvite(true);
+        return;
+      }
 
-    if (joinGroupId && joinGroupName) {
-        // Check if user is already in this group
-        const existingGroup = groups.find(g => g.id === joinGroupId);
-        
-        if (existingGroup) {
-            if (!existingGroup.members.includes(currentUser.id)) {
-                // Add user to existing group
-                const updatedGroup = { ...existingGroup, members: [...existingGroup.members, currentUser.id] };
-                setGroups(prev => prev.map(g => g.id === joinGroupId ? updatedGroup : g));
-                setCurrentGroup(updatedGroup);
-                alert(`¡Te has unido al grupo "${joinGroupName}"!`);
-            } else {
-                setCurrentGroup(existingGroup);
-            }
-        } else {
-            // Create the group locally for this user
-            const newGroup: Group = {
-                id: joinGroupId,
-                name: decodeURIComponent(joinGroupName),
-                members: [currentUser.id],
-                admins: [], // Default no admins if joined via link, or maybe just self
-                icon: '👋',
-                color: 'bg-emerald-500'
-            };
-            setGroups(prev => [...prev, newGroup]);
-            setCurrentGroup(newGroup);
-            alert(`¡Te has unido al grupo "${decodeURIComponent(joinGroupName)}"!`);
-        }
+      try {
+        const decodedName = decodeURIComponent(joinGroupName);
+        const joinResponse = await joinGroup({
+          groupId: joinGroupId,
+          userId: currentUser.id,
+          groupName: decodedName
+        });
 
-        // Clean URL
+        const data = await bootstrap(currentUser.id);
+        setUsers(data.users);
+        setGroups(data.groups);
+        setItems(data.items);
+        setSettlements(data.settlements);
+        setCurrentGroup(joinResponse.group);
+        alert(`¡Te has unido al grupo "${decodedName}"!`);
+      } catch (error) {
+        alert(`No se pudo procesar la invitación: ${String(error)}`);
+      } finally {
+        setDidProcessInvite(true);
         window.history.replaceState({}, '', window.location.pathname);
+      }
+    };
+
+    processInvite();
+  }, [currentUser, didProcessInvite]);
+
+  useEffect(() => {
+    if (!currentGroup && userGroups.length > 0) {
+      setCurrentGroup(userGroups[0]);
     }
-  }, [currentUser, groups]);
+  }, [currentGroup, userGroups]);
 
-
-  const handleLogin = (name: string) => {
-    // Buscar si el usuario ya existe por nombre (case insensitive)
-    let user = users.find(u => u.name.toLowerCase() === name.toLowerCase());
-    
-    // Si no existe, crearlo
-    if (!user) {
-      user = {
-        id: uuidv4(),
-        name: name,
-        email: `${name.toLowerCase().replace(/\s/g, '')}@ejemplo.com`, // Dummy email generator
-        avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${name}`,
-        color: 'bg-purple-500',
-        plan: 'free'
-      };
-      setUsers(prev => [...prev, user!]);
-    }
-    
-    setCurrentUser(user);
-
-    // Find groups for this user
-    const existingGroups = groups.filter(g => g.members.includes(user!.id));
-    
-    if (existingGroups.length > 0) {
-      // Si ya tiene grupos, entramos al primero
-      setCurrentGroup(existingGroups[0]);
-    } else {
-      // MODIFICACIÓN: NO crear grupo automático.
-      // Dejamos currentGroup en null para que salga la pantalla de creación.
-      setCurrentGroup(null);
+  const handleLogin = async (name: string) => {
+    try {
+      setIsLoading(true);
+      setDidProcessInvite(false);
+      const data = await login(name);
+      setCurrentUser(data.user);
+      setUsers(data.users);
+      setGroups(data.groups);
+      setItems(data.items);
+      setSettlements(data.settlements);
+      setCurrentGroup(data.groups[0] || null);
+    } catch (error) {
+      alert(`No se pudo iniciar sesión: ${String(error)}`);
+    } finally {
+      setIsLoading(false);
     }
   };
 
-  const handleUpdateUser = (userId: string, data: Partial<User>) => {
-    setUsers(prev => prev.map(u => 
-      u.id === userId ? { ...u, ...data } : u
-    ));
-    // If the updated user is current user, update state
+  const handleUpdateUser = async (userId: string, data: Partial<User>) => {
+    const localFallback = users.find((u) => u.id === userId);
+
+    setUsers((prev) => prev.map((u) => (u.id === userId ? { ...u, ...data } : u)));
     if (currentUser?.id === userId) {
-      setCurrentUser(prev => prev ? { ...prev, ...data } : null);
+      setCurrentUser((prev) => (prev ? { ...prev, ...data } : null));
+    }
+
+    try {
+      const response = await updateUser(userId, data);
+      setUsers((prev) => prev.map((u) => (u.id === userId ? response.user : u)));
+      if (currentUser?.id === userId) {
+        setCurrentUser(response.user);
+      }
+    } catch (error) {
+      if (localFallback) {
+        setUsers((prev) => prev.map((u) => (u.id === userId ? localFallback : u)));
+        if (currentUser?.id === userId) {
+          setCurrentUser(localFallback);
+        }
+      }
+      alert(`No se pudo guardar el perfil: ${String(error)}`);
     }
   };
 
   const handleLogout = () => {
     setCurrentUser(null);
     setCurrentGroup(null);
+    setDidProcessInvite(false);
     setShowSidebar(false);
   };
   
-  const handleDeleteAccount = () => {
+  const handleDeleteAccount = async () => {
     if(!currentUser) return;
     if (confirm("¿Estás seguro de que quieres eliminar tu cuenta? Esta acción es irreversible.")) {
-      // Remove user from all groups
-      setGroups(prev => prev.map(g => ({
-        ...g,
-        members: g.members.filter(id => id !== currentUser.id),
-        admins: g.admins.filter(id => id !== currentUser.id)
-      })).filter(g => g.members.length > 0)); // Remove empty groups if necessary, or keep them
-
-      // Remove user from users list
-      setUsers(prev => prev.filter(u => u.id !== currentUser.id));
-
-      handleLogout();
+      try {
+        await deleteUser(currentUser.id);
+        setUsers(prev => prev.filter(u => u.id !== currentUser.id));
+        setGroups(prev => prev.filter(g => g.members.includes(currentUser.id) === false));
+        setItems([]);
+        setSettlements([]);
+        handleLogout();
+      } catch (error) {
+        alert(`No se pudo eliminar la cuenta: ${String(error)}`);
+      }
     }
   };
 
-  const handleAddItems = (newItems: ProductItem[]) => {
+  const handleAddItems = async (newItems: ProductItem[]) => {
     if (!currentGroup) return;
     const itemsWithGroup = newItems.map(item => ({ 
       ...item, 
       groupId: currentGroup.id,
       assignedTo: undefined 
     }));
-    setItems(prev => [...prev, ...itemsWithGroup]);
-    setView(AppView.LIST);
+
+    try {
+      const response = await addItems(itemsWithGroup);
+      setItems(prev => [...prev, ...response.items]);
+      setView(AppView.LIST);
+    } catch (error) {
+      alert(`No se pudieron añadir los productos: ${String(error)}`);
+    }
   };
 
-  const handleToggleCheck = (id: string) => {
-    setItems(prev => prev.map(item => 
-      item.id === id ? { ...item, checked: !item.checked } : item
-    ));
+  const handleToggleCheck = async (id: string) => {
+    const item = items.find((value) => value.id === id);
+    if (!item) return;
+
+    try {
+      const response = await updateItem(id, { checked: !item.checked });
+      setItems(prev => prev.map(it => (it.id === id ? response.item : it)));
+    } catch (error) {
+      alert(`No se pudo actualizar el estado del producto: ${String(error)}`);
+    }
   };
 
-  const handleDeleteItem = (id: string) => {
-    setItems(prev => prev.filter(item => item.id !== id));
+  const handleDeleteItem = async (id: string) => {
+    try {
+      await deleteItem(id);
+      setItems(prev => prev.filter(item => item.id !== id));
+    } catch (error) {
+      alert(`No se pudo borrar el producto: ${String(error)}`);
+    }
   };
 
-  const handleAssignUser = (itemId: string, userId: string | undefined) => {
-    setItems(prev => prev.map(item => 
-      item.id === itemId ? { ...item, assignedTo: userId } : item
-    ));
+  const handleAssignUser = async (itemId: string, userId: string | undefined) => {
+    try {
+      const response = await updateItem(itemId, { assignedTo: userId });
+      setItems(prev => prev.map(item => (item.id === itemId ? response.item : item)));
+    } catch (error) {
+      alert(`No se pudo asignar el producto: ${String(error)}`);
+    }
   };
 
-  const handleUpdateItem = (id: string, updates: Partial<ProductItem>) => {
-    setItems(prev => prev.map(item => 
-      item.id === id ? { ...item, ...updates } : item
-    ));
+  const handleUpdateItem = async (id: string, updates: Partial<ProductItem>) => {
+    try {
+      const response = await updateItem(id, updates);
+      setItems(prev => prev.map(item => (item.id === id ? response.item : item)));
+    } catch (error) {
+      alert(`No se pudo actualizar el producto: ${String(error)}`);
+    }
   };
 
   const handleSelectGroup = (groupId: string) => {
@@ -221,118 +248,90 @@ const App: React.FC = () => {
     }
   };
 
-  const handleCreateGroup = (groupData: Omit<Group, 'id' | 'members' | 'admins'>) => {
+  const handleCreateGroup = async (groupData: Omit<Group, 'id' | 'members' | 'admins'>) => {
     if (!currentUser) return;
-    const newGroup: Group = {
-      id: uuidv4(),
-      members: [currentUser.id],
-      admins: [currentUser.id],
-      ...groupData
-    };
-    setGroups(prev => [...prev, newGroup]);
-    setCurrentGroup(newGroup);
-    setShowNewGroupModal(false);
-  };
 
-  // --- Group Management Handlers ---
-
-  const handleUpdateGroup = (groupId: string, data: Partial<Group>) => {
-    setGroups(prev => prev.map(g => 
-      g.id === groupId ? { ...g, ...data } : g
-    ));
-    if (currentGroup?.id === groupId) {
-      setCurrentGroup(prev => prev ? { ...prev, ...data } : null);
-    }
-  };
-
-  const handleDeleteGroup = (groupId: string) => {
-    setGroups(prev => prev.filter(g => g.id !== groupId));
-    // Also delete items from that group
-    setItems(prev => prev.filter(i => i.groupId !== groupId));
-    
-    // Switch to another group or clear
-    if (currentGroup?.id === groupId) {
-      const remaining = userGroups.filter(g => g.id !== groupId);
-      setCurrentGroup(remaining.length > 0 ? remaining[0] : null);
-    }
-    setShowGroupSettings(false);
-  };
-
-  const handleRemoveMember = (groupId: string, userId: string) => {
-    setGroups(prev => prev.map(g => {
-      if (g.id !== groupId) return g;
-      return {
-        ...g,
-        members: g.members.filter(m => m !== userId),
-        admins: g.admins.filter(a => a !== userId)
-      };
-    }));
-    // Logic for updating current group if open
-    if (currentGroup?.id === groupId) {
-      setCurrentGroup(prev => {
-        if (!prev) return null;
-        return {
-          ...prev,
-          members: prev.members.filter(m => m !== userId),
-          admins: prev.admins.filter(a => a !== userId)
-        }
+    try {
+      const response = await createGroup({
+        id: uuidv4(),
+        ownerId: currentUser.id,
+        ...groupData
       });
+      setGroups(prev => [...prev, response.group]);
+      setCurrentGroup(response.group);
+      setShowNewGroupModal(false);
+    } catch (error) {
+      alert(`No se pudo crear el grupo: ${String(error)}`);
     }
   };
 
-  const handleToggleAdmin = (groupId: string, userId: string) => {
-    setGroups(prev => prev.map(g => {
-      if (g.id !== groupId) return g;
-      const isAdmin = g.admins.includes(userId);
-      return {
-        ...g,
-        admins: isAdmin ? g.admins.filter(a => a !== userId) : [...g.admins, userId]
-      };
-    }));
-    
-    if (currentGroup?.id === groupId) {
-      setCurrentGroup(prev => {
-        if (!prev) return null;
-        const isAdmin = prev.admins.includes(userId);
-        return {
-          ...prev,
-          admins: isAdmin ? prev.admins.filter(a => a !== userId) : [...prev.admins, userId]
-        }
-      });
+  const handleUpdateGroup = async (groupId: string, data: Partial<Group>) => {
+    try {
+      const response = await updateGroup(groupId, data);
+      setGroups(prev => prev.map(g => (g.id === groupId ? response.group : g)));
+      if (currentGroup?.id === groupId) {
+        setCurrentGroup(response.group);
+      }
+    } catch (error) {
+      alert(`No se pudo actualizar el grupo: ${String(error)}`);
     }
   };
 
-  const handleAddMemberManual = (groupId: string, name: string) => {
-    const newUserId = uuidv4();
-    const newUser: User = {
-      id: newUserId,
-      name: name,
-      avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${name}${newUserId}`,
-      color: 'bg-slate-500', // Default color
-      plan: 'free'
-    };
+  const handleDeleteGroup = async (groupId: string) => {
+    try {
+      await deleteGroup(groupId);
+      setGroups(prev => prev.filter(g => g.id !== groupId));
+      setItems(prev => prev.filter(i => i.groupId !== groupId));
+      setSettlements(prev => prev.filter(s => s.groupId !== groupId));
 
-    // Add user to global state
-    setUsers(prev => [...prev, newUser]);
+      if (currentGroup?.id === groupId) {
+        const remaining = userGroups.filter(g => g.id !== groupId);
+        setCurrentGroup(remaining.length > 0 ? remaining[0] : null);
+      }
+      setShowGroupSettings(false);
+    } catch (error) {
+      alert(`No se pudo eliminar el grupo: ${String(error)}`);
+    }
+  };
 
-    // Add user to group
-    setGroups(prev => prev.map(g => {
-      if (g.id !== groupId) return g;
-      return {
-        ...g,
-        members: [...g.members, newUserId]
-      };
-    }));
+  const handleRemoveMember = async (groupId: string, userId: string) => {
+    try {
+      const response = await removeMember(groupId, userId);
+      setGroups(prev => prev.map(g => (g.id === groupId ? response.group : g)));
+      if (currentGroup?.id === groupId) {
+        setCurrentGroup(response.group);
+      }
+    } catch (error) {
+      alert(`No se pudo eliminar el miembro: ${String(error)}`);
+    }
+  };
 
-    if (currentGroup?.id === groupId) {
-      setCurrentGroup(prev => prev ? {
-        ...prev,
-        members: [...prev.members, newUserId]
-      } : null);
+  const handleToggleAdmin = async (groupId: string, userId: string) => {
+    try {
+      const response = await toggleAdmin(groupId, userId);
+      setGroups(prev => prev.map(g => (g.id === groupId ? response.group : g)));
+      if (currentGroup?.id === groupId) {
+        setCurrentGroup(response.group);
+      }
+    } catch (error) {
+      alert(`No se pudo actualizar permisos: ${String(error)}`);
+    }
+  };
+
+  const handleAddMemberManual = async (groupId: string, name: string) => {
+    try {
+      const response = await addMemberManual(groupId, name);
+      setUsers(prev => [...prev, response.user]);
+      setGroups(prev => prev.map(g => (g.id === groupId ? response.group : g)));
+      if (currentGroup?.id === groupId) {
+        setCurrentGroup(response.group);
+      }
+    } catch (error) {
+      alert(`No se pudo añadir el miembro: ${String(error)}`);
     }
   };
   
-  const handleSettleDebt = (fromId: string, toId: string, amount: number) => {
+  const handleSettleDebt = async (fromId: string, toId: string, amount: number) => {
     if (!currentGroup) return;
     const newSettlement: Settlement = {
       id: uuidv4(),
@@ -342,7 +341,20 @@ const App: React.FC = () => {
       timestamp: Date.now(),
       groupId: currentGroup.id
     };
-    setSettlements(prev => [...prev, newSettlement]);
+
+    try {
+      const response = await createSettlement(newSettlement);
+      setSettlements(prev => [...prev, response.settlement]);
+    } catch (error) {
+      alert(`No se pudo registrar el pago: ${String(error)}`);
+    }
+  };
+
+  const handleToggleTheme = async () => {
+    if (!currentUser) return;
+    const nextTheme = darkMode ? 'light' : 'dark';
+    setDarkMode(nextTheme === 'dark');
+    await handleUpdateUser(currentUser.id, { theme: nextTheme });
   };
 
 
@@ -356,6 +368,7 @@ const App: React.FC = () => {
           onClose={() => {}} // No-op
           onLogin={handleLogin} 
           allowClose={false}
+          isLoading={isLoading}
         />
       </div>
     );
@@ -363,9 +376,7 @@ const App: React.FC = () => {
 
   // 2. Main App (Authenticated)
   
-  // Si no hay grupo activo, pero el usuario TIENE grupos, seleccionamos el primero automáticamente
   if (!currentGroup && userGroups.length > 0) {
-    setCurrentGroup(userGroups[0]);
     return null; 
   }
 
@@ -497,7 +508,7 @@ const App: React.FC = () => {
         onLogout={handleLogout}
         onLogin={() => {}}
         isDarkMode={darkMode}
-        onToggleTheme={() => setDarkMode(!darkMode)}
+        onToggleTheme={handleToggleTheme}
         onUpdateUser={handleUpdateUser}
         onDeleteAccount={handleDeleteAccount}
       />

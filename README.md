@@ -10,11 +10,19 @@ View your app in AI Studio: https://ai.studio/apps/drive/1e_rxfIumHhpM6o6a6CmMYI
 
 ## Run Locally
 
-**Prerequisites:**  Node.js
+**Prerequisites:**
+- Node.js
+- MongoDB ejecutándose en `mongodb://localhost:27017`
 
-
-1. Install dependencies:
+1. Instala dependencias:
    `npm install`
-2. Set the `GEMINI_API_KEY` in [.env.local](.env.local) to your Gemini API key
-3. Run the app:
-   `npm run dev`
+2. Arranca la API + frontend:
+   `npm run dev:full`
+3. Abre la app en:
+   `http://localhost:3000`
+
+### Base de datos
+
+- Por defecto, la API usa `mongodb://127.0.0.1:27017/compra_conmigo`.
+- Si quieres cambiarla, define `MONGO_URI` antes de arrancar la API.
+
