@@ -100,6 +100,17 @@ export const AuthModal: React.FC<AuthModalProps> = ({ onClose, onLogin, allowClo
           }
         } else if (err.status === 409) {
           setMessage('Este email ya está registrado. Usa el modo Login.');
+        } else if (err.status === 403) {
+          // Email exists but not verified - request verification code
+          setMessage('Email no verificado. Reenviando código...');
+          try {
+            const resp: any = await api.resendCode(email.trim());
+            if (resp.warning) {
+              setMessage('Código no enviado (problema de correo). Intenta más tarde.');
+            }
+            setResendTimer(60);
+          } catch (_){ }
+          setStep('code');
         } else {
           setMessage('Error: ' + (err.message || 'Inténtalo nuevamente.'));
         }
