@@ -487,14 +487,6 @@ const App: React.FC = () => {
             </p>
           </div>
         </div>
-              Iniciar Sesión
-            </button>
-          </div>
-
-          <p className="text-xs text-slate-400 dark:text-slate-600 font-medium">
-            Debes estar registrado para empezar a usar la aplicación.
-          </p>
-        </div>
 
         {showAuthModal && (
           <AuthModal
