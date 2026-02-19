@@ -51,7 +51,15 @@ export const getSettlements = () => request('/settlements');
 export const createSettlement = (data: any) => request('/settlements', { method: 'POST', body: JSON.stringify(data) });
 
 // Authentication
-export const register = (data: { name: string; email: string; password: string }) =>
+export const register = (data: { 
+  name: string; 
+  email: string; 
+  password: string;
+  phoneNumber?: string;
+  country?: string;
+  city?: string;
+  postalCode?: string;
+}) =>
   request('/auth/register', { method: 'POST', body: JSON.stringify(data) });
 export const login = (email: string, password: string) =>
   request('/auth/login', { method: 'POST', body: JSON.stringify({ email, password }) });

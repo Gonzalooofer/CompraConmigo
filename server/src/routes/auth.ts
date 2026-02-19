@@ -51,7 +51,10 @@ router.post('/register', async (req, res) => {
       mailWarning = true;
       // don't fail registration just because mail failed
     }
-    const response: any = { message: 'Verification code sent' };
+    const response: any = { 
+      message: 'Verification code sent',
+      userId: user._id || user.id
+    };
     if (mailWarning) response.warning = 'failed to send email';
     res.status(201).json(response);
   } catch (err) {

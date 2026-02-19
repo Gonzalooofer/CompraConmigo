@@ -1,4 +1,4 @@
-import { Router } from 'express';
+import { Router, Request, Response } from 'express';
 import Invitation from '../models/invitation';
 import User from '../models/user';
 import Group from '../models/group';
@@ -8,7 +8,7 @@ import { v4 as uuidv4 } from 'uuid';
 const router = Router();
 
 // Enviar invitación a un email
-router.post('/send', async (req, res) => {
+router.post('/send', async (req: Request, res: Response) => {
   const { groupId, toEmail, fromUserId } = req.body;
   
   if (!groupId || !toEmail || !fromUserId) {
@@ -70,7 +70,7 @@ router.post('/send', async (req, res) => {
 });
 
 // Aceptar invitación
-router.post('/accept/:code', async (req, res) => {
+router.post('/accept/:code', async (req: Request, res: Response) => {
   const { userId } = req.body;
   const { code } = req.params;
 
@@ -112,7 +112,7 @@ router.post('/accept/:code', async (req, res) => {
 });
 
 // Obtener invitaciones pendientes para un usuario
-router.get('/pending/:userId', async (req, res) => {
+router.get('/pending/:userId', async (req: Request, res: Response) => {
   const { userId } = req.params;
 
   try {
@@ -130,7 +130,7 @@ router.get('/pending/:userId', async (req, res) => {
 });
 
 // Rechazar invitación
-router.post('/reject/:invitationId', async (req, res) => {
+router.post('/reject/:invitationId', async (req: Request, res: Response) => {
   const { invitationId } = req.params;
 
   try {
