@@ -46,6 +46,13 @@ const App: React.FC = () => {
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [authMode, setAuthMode] = useState<'login' | 'register'>('register');
 
+  // Language state
+  const [language, setLanguage] = useState(() => localStorage.getItem('language') || 'es');
+
+  useEffect(() => {
+    localStorage.setItem('language', language);
+  }, [language]);
+
   // Apply theme class
   // keep theme preference in local storage
   useEffect(() => {
@@ -600,6 +607,7 @@ const App: React.FC = () => {
             <button
               onClick={() => setShowChat(true)}
               className="p-2.5 bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 rounded-2xl hover:bg-indigo-100 dark:hover:bg-indigo-800 transition-all active:scale-95 relative"
+              title="Abrir chat"
             >
               <MessageSquare size={20} />
               <span className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 border-2 border-white dark:border-slate-900 rounded-full animate-bounce"></span>
@@ -632,6 +640,7 @@ const App: React.FC = () => {
               onDeleteItem={handleDeleteItem}
               onAssignUser={handleAssignUser}
               onUpdateItem={handleUpdateItem}
+              language={language}
             />
           )}
 
@@ -652,6 +661,7 @@ const App: React.FC = () => {
         <Scanner
           onAddItems={handleAddItems}
           onClose={() => setView(AppView.LIST)}
+          language={language}
         />
       )}
 
@@ -661,7 +671,7 @@ const App: React.FC = () => {
         isOpen={showSidebar}
         onClose={() => setShowSidebar(false)}
         groups={userGroups}
-        currentGroupId={currentGroup.id}
+        currentGroupId={currentGroup?.id}
         onSelectGroup={handleSelectGroup}
         onAddNewGroup={() => setShowNewGroupModal(true)}
         currentUser={currentUser}
@@ -671,6 +681,8 @@ const App: React.FC = () => {
         onToggleTheme={() => setDarkMode(!darkMode)}
         onUpdateUser={handleUpdateUser}
         onDeleteAccount={handleDeleteAccount}
+        language={language}
+        onLanguageChange={setLanguage}
       />
 
       {showNewGroupModal && (

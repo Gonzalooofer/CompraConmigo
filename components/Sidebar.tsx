@@ -19,6 +19,8 @@ interface SidebarProps {
   onToggleTheme: () => void;
   onUpdateUser: (userId: string, data: Partial<User>) => void;
   onDeleteAccount: () => void;
+  language: string;
+  onLanguageChange: (lang: string) => void;
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({
@@ -34,7 +36,9 @@ export const Sidebar: React.FC<SidebarProps> = ({
   isDarkMode,
   onToggleTheme,
   onUpdateUser,
-  onDeleteAccount
+  onDeleteAccount,
+  language,
+  onLanguageChange
 }) => {
   const [showSettings, setShowSettings] = useState(false);
   const [showProfileEdit, setShowProfileEdit] = useState(false);
@@ -42,14 +46,14 @@ export const Sidebar: React.FC<SidebarProps> = ({
   return (
     <>
       {/* Overlay */}
-      <div 
+      <div
         className={`fixed inset-0 bg-black/50 dark:bg-black/80 backdrop-blur-sm z-50 transition-opacity duration-300 ${isOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}
         onClick={onClose}
       />
 
       {/* Drawer */}
       <div className={`fixed inset-y-0 left-0 w-3/4 max-w-xs bg-white dark:bg-slate-900 z-[51] transform transition-transform duration-300 ease-out shadow-2xl flex flex-col border-r border-slate-100 dark:border-slate-800 ${isOpen ? 'translate-x-0' : '-translate-x-full'}`}>
-        
+
         {/* Header */}
         <div className="p-6 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between bg-slate-50 dark:bg-slate-900">
           <h2 className="text-xl font-black text-slate-800 dark:text-white">Menú</h2>
@@ -61,7 +65,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
         {/* User Profile Section */}
         <div className="p-6 border-b border-slate-100 dark:border-slate-800 bg-gradient-to-br from-slate-50 to-white dark:from-slate-800 dark:to-slate-900">
           {currentUser ? (
-            <div 
+            <div
               className="flex items-center space-x-4 cursor-pointer group p-3 -ml-3 rounded-2xl hover:bg-white/80 dark:hover:bg-slate-700/80 transition-all"
               onClick={() => setShowProfileEdit(true)}
             >
@@ -78,7 +82,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
               </div>
             </div>
           ) : (
-            <button 
+            <button
               onClick={() => { onLogin(); onClose(); }}
               className="w-full py-3 bg-gradient-to-r from-emerald-500 to-emerald-600 text-white rounded-xl font-bold shadow-lg shadow-emerald-200 dark:shadow-emerald-900/50 hover:shadow-emerald-300 dark:hover:shadow-emerald-800/50 transition-all hover:scale-[1.02]"
             >
@@ -92,7 +96,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
           <div>
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-xs font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">Mis Grupos</h3>
-              <button 
+              <button
                 onClick={() => { onAddNewGroup(); onClose(); }}
                 className="text-emerald-600 dark:text-emerald-500 hover:bg-emerald-50 dark:hover:bg-emerald-900/30 p-2 rounded-lg transition-all hover:scale-110"
                 title="Crear nuevo grupo"
@@ -100,7 +104,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 <Plus size={18} />
               </button>
             </div>
-            
+
             <div className="space-y-2">
               {groups.length === 0 ? (
                 <div className="text-center py-6 px-3">
@@ -112,11 +116,10 @@ export const Sidebar: React.FC<SidebarProps> = ({
                   <button
                     key={group.id}
                     onClick={() => { onSelectGroup(group.id); onClose(); }}
-                    className={`w-full flex items-center justify-between p-3 rounded-xl transition-all ${
-                      currentGroupId === group.id 
-                        ? 'bg-gradient-to-r from-emerald-50 to-emerald-100/50 dark:from-emerald-900/40 dark:to-emerald-800/30 border border-emerald-200 dark:border-emerald-500/40 shadow-sm' 
-                        : 'hover:bg-slate-50 dark:hover:bg-slate-800/50 border border-transparent'
-                    }`}
+                    className={`w-full flex items-center justify-between p-3 rounded-xl transition-all ${currentGroupId === group.id
+                      ? 'bg-gradient-to-r from-emerald-50 to-emerald-100/50 dark:from-emerald-900/40 dark:to-emerald-800/30 border border-emerald-200 dark:border-emerald-500/40 shadow-sm'
+                      : 'hover:bg-slate-50 dark:hover:bg-slate-800/50 border border-transparent'
+                      }`}
                   >
                     <div className="flex items-center space-x-3 flex-1">
                       <div className={`w-11 h-11 rounded-xl flex items-center justify-center text-lg shadow-sm flex-shrink-0 ${currentGroupId === group.id ? 'bg-white dark:bg-slate-700 scale-110' : 'bg-slate-100 dark:bg-slate-800'}`}>
@@ -141,7 +144,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
         {/* Footer */}
         <div className="p-4 border-t border-slate-100 dark:border-slate-800 space-y-3 bg-slate-50 dark:bg-slate-900">
-          <button 
+          <button
             onClick={() => { setShowSettings(true); onClose(); }}
             className="w-full flex items-center space-x-3 px-4 py-3 text-slate-600 dark:text-slate-400 hover:bg-white dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-slate-200 rounded-xl transition-all font-medium text-sm group"
           >
@@ -149,7 +152,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
             <span>Configuración</span>
           </button>
           {currentUser && (
-            <button 
+            <button
               onClick={() => { onLogout(); onClose(); }}
               className="w-full flex items-center space-x-3 px-4 py-3 text-red-500 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-xl transition-all font-medium text-sm group"
             >
@@ -162,7 +165,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
       </div>
 
       {showSettings && currentUser && (
-        <SettingsModal 
+        <SettingsModal
           onClose={() => setShowSettings(false)}
           isDarkMode={isDarkMode}
           onToggleTheme={onToggleTheme}
@@ -170,11 +173,13 @@ export const Sidebar: React.FC<SidebarProps> = ({
           onUpdateUser={onUpdateUser}
           onLogout={onLogout}
           onDeleteAccount={onDeleteAccount}
+          language={language}
+          onLanguageChange={onLanguageChange}
         />
       )}
 
       {showProfileEdit && currentUser && (
-        <ProfileEditModal 
+        <ProfileEditModal
           user={currentUser}
           onClose={() => setShowProfileEdit(false)}
           onSave={onUpdateUser}

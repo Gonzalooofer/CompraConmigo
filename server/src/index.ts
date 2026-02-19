@@ -15,6 +15,7 @@ import authRoutes from './routes/auth';
 import invitationRoutes from './routes/invitation';
 import messageRoutes from './routes/message';
 import twoFARoutes from './routes/twofa';
+import Message from './models/message';
 
 const app = express();
 const httpServer = createServer(app);
@@ -75,8 +76,13 @@ io.on('connection', (socket) => {
   socket.on('send-message', async (data: { groupId: string; content: string; userName: string; userAvatar: string }) => {
     try {
       const userId = (socket as any).userId;
+      if (!userId) {
+        console.error('❌ User not registered on socket');
+        socket.emit('message-error', { error: 'No autenticado en el socket' });
+        return;
+      }
+
       // Guardar mensaje en BD
-      const Message = require('./models/message').default;
       const message = new Message({
         groupId: data.groupId,
         userId: userId,
@@ -87,7 +93,7 @@ io.on('connection', (socket) => {
       });
       await message.save();
 
-      // Emitir a todos en la sala
+      // Emitir a todos en la sala (incluyendo al remitente para confirmación)
       io.to(data.groupId).emit('new-message', {
         id: message._id,
         groupId: data.groupId,

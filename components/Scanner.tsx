@@ -2,11 +2,13 @@
 import React, { useState } from 'react';
 import { X, Loader2, ListPlus, Wand2 } from 'lucide-react';
 import { ProductItem } from '../types';
-import { v4 as uuidv4 } from 'uuid'; 
+import { v4 as uuidv4 } from 'uuid';
+import { translations } from '../translations';
 
 interface ScannerProps {
   onAddItems: (items: ProductItem[]) => void;
   onClose: () => void;
+  language: string;
 }
 
 // Base de datos ficticia de precios comunes
@@ -37,16 +39,16 @@ const MOCK_PRICES_DB: Record<string, { price: number; category: string }> = {
   'champu': { price: 3.20, category: 'Cuidado Personal' }
 };
 
-export const Scanner: React.FC<ScannerProps> = ({ onAddItems, onClose }) => {
+export const Scanner: React.FC<ScannerProps> = ({ onAddItems, onClose, language }) => {
   const [inputText, setInputText] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
 
   const getEstimatedData = (name: string) => {
     const lowerName = name.toLowerCase();
-    
+
     // Buscar coincidencia parcial en la base de datos
     const foundKey = Object.keys(MOCK_PRICES_DB).find(key => lowerName.includes(key));
-    
+
     if (foundKey) {
       return MOCK_PRICES_DB[foundKey];
     }
@@ -62,11 +64,11 @@ export const Scanner: React.FC<ScannerProps> = ({ onAddItems, onClose }) => {
     if (!inputText.trim()) return;
 
     setIsProcessing(true);
-    
+
     // Simulamos un tiempo de "pensado"
     setTimeout(() => {
       const lines = inputText.split(/[\n,]+/).filter(line => line.trim().length > 0);
-      
+
       const newItems: ProductItem[] = lines.map(line => {
         const name = line.trim();
         const { price, category } = getEstimatedData(name);
@@ -92,7 +94,7 @@ export const Scanner: React.FC<ScannerProps> = ({ onAddItems, onClose }) => {
     <div className="fixed inset-0 z-50 bg-white dark:bg-slate-950 flex flex-col transition-colors duration-300">
       <div className="px-6 py-4 flex items-center justify-between border-b border-slate-100 dark:border-slate-800 bg-gradient-to-r from-indigo-50 to-purple-50 dark:from-slate-900 dark:to-slate-800">
         <div>
-          <h2 className="text-lg font-bold text-slate-800 dark:text-slate-100">Agregar productos</h2>
+          <h2 className="text-lg font-bold text-slate-800 dark:text-slate-100">{translations[language]?.addProducts || 'Agregar productos'}</h2>
           <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Escribe una lista y nosotros hacemos el resto</p>
         </div>
         <button onClick={onClose} className="p-2 hover:bg-indigo-200 dark:hover:bg-slate-700 rounded-full transition-colors">
@@ -106,7 +108,7 @@ export const Scanner: React.FC<ScannerProps> = ({ onAddItems, onClose }) => {
             <Wand2 size={32} />
           </div>
           <div>
-            <h3 className="text-2xl font-black text-slate-800 dark:text-slate-100">Asistente Inteligente</h3>
+            <h3 className="text-2xl font-black text-slate-800 dark:text-slate-100">{translations[language]?.smartAssistant || 'Asistente Inteligente'}</h3>
             <p className="text-slate-500 dark:text-slate-400 text-sm px-4 mt-2 leading-relaxed">
               ✨ Escribe tu lista. Nosotros detectamos automáticamente la categoría y estimamos el precio basándonos en la media de mercado.
             </p>
@@ -118,20 +120,20 @@ export const Scanner: React.FC<ScannerProps> = ({ onAddItems, onClose }) => {
         </div>
 
         <div className="relative">
-            <textarea
+          <textarea
             value={inputText}
             onChange={(e) => setInputText(e.target.value)}
             autoFocus
             placeholder="Ej: Leche, 2kg de Patatas, Aceite de oliva, Pan integral..."
             className="w-full p-4 rounded-xl bg-slate-50 dark:bg-slate-900 border-2 border-slate-200 dark:border-slate-800 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/30 outline-none resize-none h-48 text-slate-800 dark:text-slate-200 font-medium shadow-inner transition-all"
-            />
-            <div className="absolute top-3 right-3 text-[10px] text-slate-400 font-bold bg-white dark:bg-slate-800 px-3 py-1.5 rounded-lg border border-slate-100 dark:border-slate-700 flex items-center space-x-1">
-              <span className="w-1.5 h-1.5 bg-green-500 rounded-full inline-block"></span>
-              <span>PRECIO AUTO</span>
-            </div>
-            <div className="absolute bottom-3 right-3 text-xs text-slate-400 font-medium">
-              {inputText.split(/[\n,]+/).filter(line => line.trim().length > 0).length} productos
-            </div>
+          />
+          <div className="absolute top-3 right-3 text-[10px] text-slate-400 font-bold bg-white dark:bg-slate-800 px-3 py-1.5 rounded-lg border border-slate-100 dark:border-slate-700 flex items-center space-x-1">
+            <span className="w-1.5 h-1.5 bg-green-500 rounded-full inline-block"></span>
+            <span>PRECIO AUTO</span>
+          </div>
+          <div className="absolute bottom-3 right-3 text-xs text-slate-400 font-medium">
+            {inputText.split(/[\n,]+/).filter(line => line.trim().length > 0).length} productos
+          </div>
         </div>
       </div>
 
@@ -144,12 +146,12 @@ export const Scanner: React.FC<ScannerProps> = ({ onAddItems, onClose }) => {
           {isProcessing ? (
             <>
               <Loader2 className="animate-spin" size={20} />
-              <span>Analizando...</span>
+              <span>{translations[language]?.analyze || 'Analizando...'}</span>
             </>
           ) : (
             <>
               <ListPlus size={20} />
-              <span>Generar Lista</span>
+              <span>{translations[language]?.generateList || 'Generar Lista'}</span>
             </>
           )}
         </button>
@@ -157,7 +159,7 @@ export const Scanner: React.FC<ScannerProps> = ({ onAddItems, onClose }) => {
           onClick={onClose}
           className="w-full py-3 text-slate-600 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 font-medium rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
         >
-          Cancelar
+          {translations[language]?.cancel || 'Cancelar'}
         </button>
       </div>
     </div>
