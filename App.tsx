@@ -8,11 +8,10 @@ import { AuthModal } from './components/AuthModal';
 import { Sidebar } from './components/Sidebar';
 import { NewGroupModal } from './components/NewGroupModal';
 import { GroupSettingsModal } from './components/GroupSettingsModal';
-import { ChatModal } from './components/ChatModal';
 import { AppView, ProductItem, User, Group, Settlement } from './types';
 // backend API helpers
 import * as api from './services/api';
-import { Menu, Settings2, Plus, LogOut, MessageSquare } from 'lucide-react';
+import { Menu, Settings2, Plus, LogOut } from 'lucide-react';
 import { v4 as uuidv4 } from 'uuid';
 
 const App: React.FC = () => {
@@ -40,7 +39,6 @@ const App: React.FC = () => {
   const [showSidebar, setShowSidebar] = useState(false);
   const [showNewGroupModal, setShowNewGroupModal] = useState(false);
   const [showGroupSettings, setShowGroupSettings] = useState(false);
-  const [showChat, setShowChat] = useState(false);
 
   // Auth Modal State
   const [showAuthModal, setShowAuthModal] = useState(false);
@@ -603,16 +601,7 @@ const App: React.FC = () => {
         </button>
 
         <div className="flex items-center space-x-2 shrink-0">
-          {currentGroup && (
-            <button
-              onClick={() => setShowChat(true)}
-              className="p-2.5 bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 rounded-2xl hover:bg-indigo-100 dark:hover:bg-indigo-800 transition-all active:scale-95 relative"
-              title="Abrir chat"
-            >
-              <MessageSquare size={20} />
-              <span className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 border-2 border-white dark:border-slate-900 rounded-full animate-bounce"></span>
-            </button>
-          )}
+
           <button
             onClick={() => setShowSidebar(true)}
             className="relative group shrink-0"
@@ -706,14 +695,7 @@ const App: React.FC = () => {
         />
       )}
 
-      {showChat && currentGroup && currentUser && (
-        <ChatModal
-          groupId={currentGroup.id}
-          groupName={currentGroup.name}
-          currentUser={currentUser}
-          onClose={() => setShowChat(false)}
-        />
-      )}
+
 
     </div>
   );
