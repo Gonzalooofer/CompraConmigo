@@ -74,7 +74,6 @@ export const Scanner: React.FC<ScannerProps> = ({ onAddItems, onClose, language 
         const { price, category } = getEstimatedData(name);
 
         return {
-          id: uuidv4(),
           name: name.charAt(0).toUpperCase() + name.slice(1),
           category: category,
           estimatedPrice: price, // Precio automático ficticio
