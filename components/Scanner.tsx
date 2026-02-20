@@ -135,8 +135,6 @@ export const Scanner: React.FC<ScannerProps> = ({ onAddItems, onClose, language 
     }
     setScanningQR(false);
   };
-    }, 800);
-  };
 
   return (
     <div className="fixed inset-0 z-50 bg-white dark:bg-slate-950 flex flex-col transition-colors duration-300">
