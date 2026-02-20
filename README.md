@@ -117,6 +117,14 @@ npm install nodemailer bcrypt
 npm install -D @types/nodemailer @types/bcrypt
 ```
 
+En el frontend se añade soporte de lectura de QR para productos. Agrega la librería correspondiente:
+
+```bash
+npm install html5-qrcode
+```
+
+Esto permite escanear un código del producto y añadirlo automáticamente a la lista mediante la cámara del dispositivo.
+
 Esto añade `nodemailer` (para enviar emails) y `bcrypt` (para proteger contraseñas).
 
 #### Notas de implementación

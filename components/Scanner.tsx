@@ -1,9 +1,11 @@
 
-import React, { useState } from 'react';
-import { X, Loader2, ListPlus, Wand2 } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import { X, Loader2, ListPlus, Wand2, Camera } from 'lucide-react';
 import { ProductItem } from '../types';
 import { v4 as uuidv4 } from 'uuid';
 import { translations } from '../translations';
+// NOTE: html5-qrcode is added as a dependency (npm install html5-qrcode)
+import { Html5QrcodeScanner } from 'html5-qrcode';
 
 interface ScannerProps {
   onAddItems: (items: ProductItem[]) => void;
@@ -42,6 +44,8 @@ const MOCK_PRICES_DB: Record<string, { price: number; category: string }> = {
 export const Scanner: React.FC<ScannerProps> = ({ onAddItems, onClose, language }) => {
   const [inputText, setInputText] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
+  const [scanningQR, setScanningQR] = useState(false);
+  const scannerRef = useRef<Html5QrcodeScanner | null>(null);
 
   const getEstimatedData = (name: string) => {
     const lowerName = name.toLowerCase();
@@ -89,6 +93,51 @@ export const Scanner: React.FC<ScannerProps> = ({ onAddItems, onClose, language 
     }, 800);
   };
 
+  const onScanSuccess = (decodedText: string) => {
+    // treat decoded text as product name
+    const name = decodedText.trim();
+    if (name) {
+      const { price, category } = getEstimatedData(name);
+      const item: ProductItem = {
+        name: name.charAt(0).toUpperCase() + name.slice(1),
+        category,
+        estimatedPrice: price,
+        quantity: 1,
+        checked: false,
+        assignedTo: undefined
+      };
+      onAddItems([item]);
+    }
+    // stop scanner
+    if (scannerRef.current) {
+      scannerRef.current.clear().catch(() => {});
+      scannerRef.current = null;
+    }
+    setScanningQR(false);
+    onClose();
+  };
+
+  const onScanError = (err: any) => {
+    console.warn('QR scan error', err);
+  };
+
+  const startQR = () => {
+    setScanningQR(true);
+    const config = { fps: 10, qrbox: 250 };
+    scannerRef.current = new Html5QrcodeScanner('qr-reader', config, false);
+    scannerRef.current.render(onScanSuccess, onScanError);
+  };
+
+  const stopQR = () => {
+    if (scannerRef.current) {
+      scannerRef.current.clear().catch(() => {});
+      scannerRef.current = null;
+    }
+    setScanningQR(false);
+  };
+    }, 800);
+  };
+
   return (
     <div className="fixed inset-0 z-50 bg-white dark:bg-slate-950 flex flex-col transition-colors duration-300">
       <div className="px-6 py-4 flex items-center justify-between border-b border-slate-100 dark:border-slate-800 bg-gradient-to-r from-indigo-50 to-purple-50 dark:from-slate-900 dark:to-slate-800">
@@ -111,6 +160,9 @@ export const Scanner: React.FC<ScannerProps> = ({ onAddItems, onClose, language 
             <p className="text-slate-500 dark:text-slate-400 text-sm px-4 mt-2 leading-relaxed">
               ✨ Escribe tu lista. Nosotros detectamos automáticamente la categoría y estimamos el precio basándonos en la media de mercado.
             </p>
+            <p className="text-slate-400 dark:text-slate-500 text-xs px-4 -mt-1">
+              {translations[language]?.scanQRDesc || 'Escanea el código de un producto para añadirlo automáticamente'}
+            </p>
           </div>
         </div>
 
@@ -118,22 +170,44 @@ export const Scanner: React.FC<ScannerProps> = ({ onAddItems, onClose, language 
           <p className="text-sm text-blue-900 dark:text-blue-200 font-medium">💡 Consejo: Separa los productos con comas o líneas nuevas para mejor detección</p>
         </div>
 
-        <div className="relative">
-          <textarea
-            value={inputText}
-            onChange={(e) => setInputText(e.target.value)}
-            autoFocus
-            placeholder="Ej: Leche, 2kg de Patatas, Aceite de oliva, Pan integral..."
-            className="w-full p-4 rounded-xl bg-slate-50 dark:bg-slate-900 border-2 border-slate-200 dark:border-slate-800 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/30 outline-none resize-none h-48 text-slate-800 dark:text-slate-200 font-medium shadow-inner transition-all"
-          />
-          <div className="absolute top-3 right-3 text-[10px] text-slate-400 font-bold bg-white dark:bg-slate-800 px-3 py-1.5 rounded-lg border border-slate-100 dark:border-slate-700 flex items-center space-x-1">
-            <span className="w-1.5 h-1.5 bg-green-500 rounded-full inline-block"></span>
-            <span>PRECIO AUTO</span>
+        {!scanningQR ? (
+          <>
+            <div className="relative">
+              <textarea
+                value={inputText}
+                onChange={(e) => setInputText(e.target.value)}
+                autoFocus
+                placeholder="Ej: Leche, 2kg de Patatas, Aceite de oliva, Pan integral..."
+                className="w-full p-4 rounded-xl bg-slate-50 dark:bg-slate-900 border-2 border-slate-200 dark:border-slate-800 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/30 outline-none resize-none h-48 text-slate-800 dark:text-slate-200 font-medium shadow-inner transition-all"
+              />
+              <div className="absolute top-3 right-3 text-[10px] text-slate-400 font-bold bg-white dark:bg-slate-800 px-3 py-1.5 rounded-lg border border-slate-100 dark:border-slate-700 flex items-center space-x-1">
+                <span className="w-1.5 h-1.5 bg-green-500 rounded-full inline-block"></span>
+                <span>PRECIO AUTO</span>
+              </div>
+              <div className="absolute bottom-3 right-3 text-xs text-slate-400 font-medium">
+                {inputText.split(/[\n,]+/).filter(line => line.trim().length > 0).length} productos
+              </div>
+            </div>
+
+            <button
+              onClick={startQR}
+              className="mt-4 w-full py-3 flex items-center justify-center gap-2 bg-gradient-to-r from-indigo-500 to-indigo-700 text-white rounded-xl font-semibold hover:from-indigo-600 hover:to-indigo-800 transition-all"
+            >
+              <Camera size={18} />
+              {translations[language]?.scanQR || 'Escanear QR'}
+            </button>
+          </>
+        ) : (
+          <div className="relative">
+            <div id="qr-reader" className="w-full" />
+            <button
+              onClick={stopQR}
+              className="absolute top-2 right-2 p-2 bg-red-100 dark:bg-red-800 rounded-full"
+            >
+              <X size={20} className="text-red-600 dark:text-red-400" />
+            </button>
           </div>
-          <div className="absolute bottom-3 right-3 text-xs text-slate-400 font-medium">
-            {inputText.split(/[\n,]+/).filter(line => line.trim().length > 0).length} productos
-          </div>
-        </div>
+        )}
       </div>
 
       <div className="p-6 bg-white dark:bg-slate-900 border-t border-slate-100 dark:border-slate-800 space-y-3 safe-area-pb">
