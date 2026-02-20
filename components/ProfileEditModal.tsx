@@ -1,8 +1,7 @@
 
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef } from 'react';
 import { X, RefreshCw, Save, Camera } from 'lucide-react';
 import { User } from '../types';
-import * as api from '../services/api';
 
 interface ProfileEditModalProps {
   user: User;
@@ -19,7 +18,6 @@ const COLORS = [
 export const ProfileEditModal: React.FC<ProfileEditModalProps> = ({ user, onClose, onSave }) => {
   const [name, setName] = useState(user.name);
   const [avatar, setAvatar] = useState(user.avatar);
-  const [avatarFile, setAvatarFile] = useState<File | null>(null);
   const [selectedColor, setSelectedColor] = useState(user.color);
   const [phoneNumber, setPhoneNumber] = useState(user.phoneNumber || '');
   const [country, setCountry] = useState(user.country || '');
@@ -28,8 +26,6 @@ export const ProfileEditModal: React.FC<ProfileEditModalProps> = ({ user, onClos
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleRegenerateAvatar = () => {
-    setAvatarFile(null);
-    if (fileInputRef.current) fileInputRef.current.value = '';
     const newSeed = Math.random().toString(36).substring(7);
     setAvatar(`https://api.dicebear.com/7.x/avataaars/svg?seed=${newSeed}`);
   };
@@ -37,62 +33,28 @@ export const ProfileEditModal: React.FC<ProfileEditModalProps> = ({ user, onClos
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      setAvatarFile(file);
-      // use object URL for preview (much faster than base64 encode)
-      const url = URL.createObjectURL(file);
-      setAvatar(url);
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        if (reader.result) {
+          setAvatar(reader.result as string);
+        }
+      };
+      reader.readAsDataURL(file);
     }
   };
 
-  // clean up object URL when file changes or component unmounts
-  useEffect(() => {
-    return () => {
-      if (avatarFile && avatar.startsWith('blob:')) {
-        URL.revokeObjectURL(avatar);
-      }
-    };
-  }, [avatarFile, avatar]);
-
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!name.trim()) return;
-
-    let finalAvatar = avatar;
-
-    // if a new file was selected, upload it first
-    if (avatarFile) {
-      try {
-        const resp: any = await api.uploadAvatar(user.id, avatarFile);
-        finalAvatar = resp.avatar;
-      } catch (err) {
-        console.error('Error subiendo avatar', err);
-        alert('No se pudo subir la imagen. Intenta con un archivo más pequeño.');
-        return;
-      }
-    } else if (avatar.startsWith('data:')) {
-      // fallback: user picked a file but we didn't capture it (e.g. older build)
-      try {
-        const blob = await (await fetch(avatar)).blob();
-        const fallbackFile = new File([blob], 'avatar.png', { type: blob.type });
-        const resp: any = await api.uploadAvatar(user.id, fallbackFile);
-        finalAvatar = resp.avatar;
-      } catch (err) {
-        console.error('Error subiendo avatar desde data-url', err);
-        alert('No se pudo subir la imagen. Intenta con un archivo más pequeño.');
-        return;
-      }
-    }
-
     onSave(user.id, {
       name,
-      avatar: finalAvatar,
+      avatar,
       color: selectedColor,
       phoneNumber: phoneNumber || undefined,
       country: country || undefined,
       city: city || undefined,
       postalCode: postalCode || undefined
     });
-    if (fileInputRef.current) fileInputRef.current.value = '';
     onClose();
   };
 
@@ -112,7 +74,7 @@ export const ProfileEditModal: React.FC<ProfileEditModalProps> = ({ user, onClos
           
           {/* Avatar Section */}
           <div className="flex flex-col items-center space-y-3">
-            <div className="relative group cursor-pointer" onClick={() => fileInputRef.current?.click()}>
+            <div className="relative group">
               <div className="w-28 h-28 rounded-full border-4 border-emerald-200 dark:border-emerald-800 shadow-lg overflow-hidden bg-slate-100 dark:bg-slate-800">
                 <img 
                   src={avatar} 
@@ -123,7 +85,7 @@ export const ProfileEditModal: React.FC<ProfileEditModalProps> = ({ user, onClos
               <div className="absolute -bottom-2 -right-2 flex space-x-2">
                   <button
                     type="button"
-                    onClick={(e) => { e.stopPropagation(); fileInputRef.current?.click(); }}
+                    onClick={() => fileInputRef.current?.click()}
                     className="p-2.5 bg-emerald-600 text-white rounded-full shadow-lg hover:bg-emerald-700 transition-all border-4 border-white dark:border-slate-900 group-hover:scale-110"
                     title="Subir foto"
                   >
@@ -131,7 +93,7 @@ export const ProfileEditModal: React.FC<ProfileEditModalProps> = ({ user, onClos
                   </button>
                   <button
                     type="button"
-                    onClick={(e) => { e.stopPropagation(); handleRegenerateAvatar(); }}
+                    onClick={handleRegenerateAvatar}
                     className="p-2.5 bg-indigo-600 text-white rounded-full shadow-lg hover:bg-indigo-700 transition-all border-4 border-white dark:border-slate-900 group-hover:scale-110"
                     title="Generar al azar"
                   >

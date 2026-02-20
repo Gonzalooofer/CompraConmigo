@@ -4,7 +4,6 @@ dotenv.config();
 import express from 'express';
 import mongoose from 'mongoose';
 import cors from 'cors';
-import path from 'path';
 import { createServer } from 'http';
 import { Server as SocketIOServer } from 'socket.io';
 
@@ -30,9 +29,6 @@ const io = new SocketIOServer(httpServer, {
 app.use(cors());
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ limit: '50mb', extended: true }));
-
-// serve uploaded files
-app.use('/uploads', express.static(path.join(__dirname, '..', 'uploads')));
 
 const MONGO_URI = process.env.MONGO_URI || 'mongodb://localhost:27017/compraconmigo';
 

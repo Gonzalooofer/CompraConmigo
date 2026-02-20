@@ -26,10 +26,6 @@ export const translations: Record<string, Record<string, string>> = {
         backupCodes: 'Códigos de Respaldo',
         copyBackup: 'Copiar códigos de respaldo',
         verifyCode: 'Introduce el código de 6 dígitos',
-        setupLater: 'Configurar más tarde',
-        twoFAPrompt: '¿Quieres configurar 2FA ahora?',
-        twoFAXnow: 'Sí, configurar ahora',
-        twoFALater: 'No, más tarde',
         myList: 'Mi Lista',
         estimatedTotal: 'Total Estimado',
         bought: 'Comprado'
@@ -60,10 +56,6 @@ export const translations: Record<string, Record<string, string>> = {
         backupCodes: 'Backup Codes',
         copyBackup: 'Copy backup codes',
         verifyCode: 'Enter 6-digit code',
-        setupLater: 'Setup later',
-        twoFAPrompt: 'Do you want to enable 2FA now?',
-        twoFAXnow: 'Yes, enable now',
-        twoFALater: 'No, later',
         myList: 'My List',
         estimatedTotal: 'Estimated Total',
         bought: 'Bought'
@@ -94,10 +86,6 @@ export const translations: Record<string, Record<string, string>> = {
         backupCodes: 'Codes de secours',
         copyBackup: 'Copier les codes',
         verifyCode: 'Entrez le code à 6 chiffres',
-        setupLater: 'Configurer plus tard',
-        twoFAPrompt: 'Voulez-vous activer la 2FA maintenant ?',
-        twoFAXnow: 'Oui, activer maintenant',
-        twoFALater: 'Non, plus tard',
         myList: 'Ma Liste',
         estimatedTotal: 'Total Estimé',
         bought: 'Acheté'

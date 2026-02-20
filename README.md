@@ -2,149 +2,115 @@
 <img width="1200" height="475" alt="GHBanner" src="https://github.com/user-attachments/assets/0aa67016-6eaf-458a-adb2-6e31a0763ed6" />
 </div>
 
-<div align="center">
-<img width="1200" height="475" alt="GHBanner" src="https://github.com/user-attachments/assets/0aa67016-6eaf-458a-adb2-6e31a0763ed6" />
-</div>
+# Run and deploy your AI Studio app
 
-# CompraConmigo
+This contains everything you need to run your app locally.
 
-**CompraConmigo** es una aplicación colaborativa para crear y comparar listas de compra en grupo. Está construida con **React + Vite** en el frontend y **Express + MongoDB** en el backend, y ofrece funciones como:
+View your app in AI Studio: https://ai.studio/apps/drive/1e_rxfIumHhpM6o6a6CmMYI0dezC8nHYt
 
-- Registro/login con email y contraseña + verificación por Gmail.
-- Autenticación multifactor (2FA) opcional, con posibilidad de configurar más tarde.
-- Gestión de grupos, invitaciones y chat interno.
-- Compartir y comparar listas de compras entre miembros.
-- Generación de códigos de respaldo y opción de recordar sesión.
+## Run Locally
 
-La aplicación está desplegada en AWS; estos documentos cubren cómo levantarla localmente y cómo actualizar el código en el servidor.
+**Prerequisites:**  Node.js
 
----
-
-## 🛠️ Desarrollo local
-
-### Requisitos previos
-- Node.js 18+ (LTS recomendado)
-- MongoDB (local o Atlas)
-- Cuenta de Gmail para el envío de correos (utiliza _app password_).
-
-### Frontend
-1. Instala dependencias:
+1. Install dependencies for the frontend:
    ```bash
    npm install
    ```
-2. Configura variables opcionales en `.env.local`:
-   ```env
-   VITE_API_BASE=http://localhost:5000/api
-   GEMINI_API_KEY=…
-   ```
-3. Ejecuta el servidor de desarrollo:
+2. (Optional) set the `GEMINI_API_KEY` in [.env.local](.env.local) to your Gemini API key
+3. Start the frontend:
    ```bash
    npm run dev
    ```
 
-### Backend
-1. Entra en la carpeta `server`:
+---
+
+## Backend
+
+A simple Express/Mongoose API lives in the `server/` folder. It exposes CRUD endpoints for users, groups, items and settlements and stores data in MongoDB.
+
+### Setup
+
+1. Go into the server directory:
    ```bash
    cd server
    ```
-2. Instala dependencias:
+2. Install backend dependencies:
    ```bash
    npm install
    ```
-3. Crea un `.env` basado en `server/.env.example` con al menos:
-   ```env
-   MONGO_URI=mongodb://…
-   PORT=5000
-   GMAIL_USER=tu@gmail.com
-   GMAIL_PASS=app_password
-   ```
-4. Inicia el servidor con recarga automática:
+3. Create a `.env` file (there is an example in `server/.env`) and set `MONGO_URI` to your MongoDB connection string.
+4. Run the development server with automatic reload:
    ```bash
    npm run dev
    ```
-5. El API escuchará en `http://localhost:5000` por defecto. Asegúrate de que el frontend apunta a esa URL.
+   The API will listen on `http://localhost:5000` by default.
 
----
+### Notes
 
-## 🔐 Autenticación y 2FA
+- The frontend is configured to call the API base URL from `VITE_API_BASE`. You can override this in an `.env` file at the project root (e.g. `VITE_API_BASE=http://localhost:5000/api`).
+- All data fetched via the API replaces the previous mock/localStorage implementation.
 
-El proceso de registro e inicio de sesión está centralizado en `components/AuthModal.tsx`. Algunas notas clave:
+### Autenticación con correo y contraseña
 
-- **Verificación de correo:** obligatorio. Se envía un código al correo que debe introducirse antes de continuar.
-- **2FA:** se ofrece un paso adicional durante el registro para configurar un autenticador. Durante el registro el usuario verá una pregunta "¿Quieres configurar 2FA ahora?" y podrá elegir entre configurarlo inmediatamente o continuar sin él; en cualquier caso el flujo de verificación por email es obligatorio. Si desea activar 2FA después, podrá hacerlo desde **Ajustes → Seguridad**.
-- El servidor genera secreto y códigos de respaldo al llamar a `POST /api/2fa/setup`, pero la cuenta no queda protegida hasta verificar (`POST /api/2fa/verify`).
+El sistema de autenticación ha sido ampliado para soportar registro/inicio con **email y contraseña**, acompañado de un código de verificación enviado por Gmail.
 
-Rutas relevantes:
+1. **Registro**
+   - El usuario introduce email, contraseña y nombre (obligatorio).
+   - Si el correo no existe en la base de datos se crea un nuevo `User` con la contraseña
+     almacenada como hash (bcrypt) y se genera un código de verificación válido 15 minutos.
+   - El servidor intenta enviar dicho código al correo; si el envío falla la cuenta sigue siendo
+     creada y el usuario podrá solicitar el código más tarde.
+2. **Verificación**
+   - Antes de acceder a la aplicación el usuario debe introducir el código recibido.
+   - El modal de autenticación (`components/AuthModal.tsx`) muestra un botón **Reenviar código**
+     que queda deshabilitado durante 60 s tras cada envío.
+3. **Inicio de sesión posterior**
+   - Una vez verificado, el usuario puede iniciar sesión con email y contraseña.
+   - Si la contraseña es incorrecta se muestra un error; si el correo no estuviera verificado,
+     se reenvía automáticamente un código.
+   - El flujo de “olvidé mi contraseña” no está implementado en este cambio, pero el usuario siempre
+     puede iniciar sesión mediante el código si no recuerda la contraseña.
 
-- `POST /api/auth/register`
-- `POST /api/auth/login`
-- `POST /api/auth/verify`
-- `POST /api/auth/resend`
-- `POST /api/2fa/setup`
-- `POST /api/2fa/verify`
+El campo `email` del modelo `User` se mantiene opcional para no afectar a los usuarios existentes.
 
----
+#### Rutas nuevas del API
+- `POST /api/auth/register` – {name,email,password} crea la cuenta y envía código.
+- `POST /api/auth/login` – {email,password} autentica si está verificado.
+- `POST /api/auth/verify` – {email,code} marca como verificado y devuelve el usuario.
+- `POST /api/auth/resend` – {email} genera y envía un nuevo código (límite 1/minuto).
 
-## ☁️ Despliegue en AWS
+#### Configuración de entorno
+En `server/.env` (no se hace commit) deben definirse al menos:
 
-La aplicación se ejecuta en una instancia EC2 (o similar) con Node.js y MongoDB conectada. Para actualizar el código en producción sigue estos pasos:
+```env
+MONGO_URI=mongodb://…
+PORT=5000
 
-1. **Conecta al servidor:**
-   ```bash
-   ssh -i /ruta/tu-clave.pem ec2-user@tu-servidor.amazonaws.com
-   ```
-2. **Ve al directorio de la app:**
-   ```bash
-   cd /home/ec2-user/CompraConmigo
-   ```
-3. **Trae los últimos cambios de Git:**
-   ```bash
-   git fetch origin main
-   git reset --hard origin/main
-   ```
-4. **Instala dependencias y construye:**
-   ```bash
-   npm install          # o npm ci para instalación limpia
-   npm run build        # genera la versión de producción del frontend
-   cd server && npm install
-   ```
-5. **Reinicia los servicios:**
-   - Si usas `pm2`:
-     ```bash
-     pm2 reload all
-     ```
-   - Si corres manualmente, para y vuelve a iniciar los procesos de Node.
-
-> Alternativamente, si la app está containerizada, actualiza la imagen y despliega mediante ECS/ECR o Docker directamente.
-
-### Variables de entorno en AWS
-Asegúrate de que las variables (`MONGO_URI`, `GMAIL_USER`, `GMAIL_PASS`, etc.) siguen presentes. Puedes exportarlas en el script de arranque (`.bashrc`/`.profile`) o gestionarlas vía `pm2 ecosystem.config.js`.
-
-
-### Cargas de imagen de perfil
-
-La aplicación ahora permite subir un fichero de imagen para el avatar del usuario en lugar de
-usar cadenas `data:` en base64. Para que esto funcione necesitas instalar `multer` en el servidor:
-
-```bash
-cd server
-npm install multer
-npm install --save-dev @types/multer
+# credenciales de Gmail usadas para enviar los códigos
+GMAIL_USER=tu_cuenta@gmail.com
+GMAIL_PASS=tu_app_password_o_contraseña
 ```
 
-El backend guarda los archivos en `uploads/avatars` y los sirve mediante `/uploads/...`.
-El cliente pedirá primero la carga y luego actualizará el resto de datos del usuario.
+> Gmail suele rechazar intentos de envío si no se permiten aplicaciones menos seguras.
+> Utiliza un *app password* desde la cuenta de Google y asegúrate de que el acceso SMTP
+> esté habilitado.
 
-También se ha mejorado el componente de edición de perfil para que toda el área del avatar sea
-clicable y el campo de fichero acepte imágenes y envíe los datos al nuevo endpoint.
+#### Dependencias adicionales
+Desde el directorio `server` instala:
 
+```bash
+npm install
+npm install nodemailer bcrypt
+npm install -D @types/nodemailer @types/bcrypt
+```
+
+Esto añade `nodemailer` (para enviar emails) y `bcrypt` (para proteger contraseñas).
+
+#### Notas de implementación
+- Todo el código relacionado está dentro de `server/src/routes/auth.ts` y `components/AuthModal.tsx`.
+- El resto de la aplicación (CRUD de usuarios, grupos, listas, etc.) es compatible y no se ha tocado.
 
 ---
 
-## 📄 Licencia & Créditos
-- Proyecto open‑source bajo [MIT](LICENSE).
-- Iconos de *lucide‑react*, diseño inspirado en [Tailwind UI](https://tailwindui.com/).
-
----
-
-Para más detalles técnicos consulta los comentarios en el código o contáctame por email.
+El texto anterior se conserva como referencia histórica, pero el flujo actual ya no se basa solo en
+un simple nombre.

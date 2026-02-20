@@ -34,25 +34,6 @@ export const createUser = (data: any) => request('/users', { method: 'POST', bod
 export const updateUser = (id: string, data: any) => request(`/users/${id}`, { method: 'PUT', body: JSON.stringify(data) });
 export const deleteUser = (id: string) => request(`/users/${id}`, { method: 'DELETE' });
 
-// upload avatar file (multipart/form-data)
-export const uploadAvatar = async (userId: string, file: File) => {
-  const form = new FormData();
-  form.append('avatar', file);
-  const res = await fetch(`${API_BASE}/users/${userId}/avatar`, { method: 'POST', body: form });
-  if (!res.ok) {
-    const text = await res.text();
-    let data: any;
-    try { data = text ? JSON.parse(text) : {}; } catch { data = text; }
-    const msg = data?.error || data?.message || res.statusText;
-    const error: any = new Error(msg);
-    error.status = res.status;
-    throw error;
-  }
-  const data = await res.json();
-  // normalize id like the other helpers
-  return { ...data, id: data._id || data.id };
-};
-
 // Groups
 export const getGroups = () => request('/groups');
 export const createGroup = (data: any) => request('/groups', { method: 'POST', body: JSON.stringify(data) });
@@ -70,15 +51,7 @@ export const getSettlements = () => request('/settlements');
 export const createSettlement = (data: any) => request('/settlements', { method: 'POST', body: JSON.stringify(data) });
 
 // Authentication
-export const register = (data: { 
-  name: string; 
-  email: string; 
-  password: string;
-  phoneNumber?: string;
-  country?: string;
-  city?: string;
-  postalCode?: string;
-}) =>
+export const register = (data: { name: string; email: string; password: string }) =>
   request('/auth/register', { method: 'POST', body: JSON.stringify(data) });
 export const login = (email: string, password: string) =>
   request('/auth/login', { method: 'POST', body: JSON.stringify({ email, password }) });

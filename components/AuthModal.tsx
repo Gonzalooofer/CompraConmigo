@@ -15,7 +15,7 @@ const COUNTRIES = ['España', 'Argentina', 'México', 'Colombia', 'Chile', 'Per�
 
 export const AuthModal: React.FC<AuthModalProps> = ({ onClose, onLogin, allowClose = true, mode = 'register' }) => {
   const [isLoginMode, setIsLoginMode] = useState(mode === 'login');
-  const [step, setStep] = useState<'credentials' | 'profile' | 'location' | 'photo' | '2fa-choice' | 'totp-setup' | 'totp-login' | 'backup-codes' | 'code'>(isLoginMode ? 'credentials' : 'credentials');
+  const [step, setStep] = useState<'credentials' | 'profile' | 'location' | 'photo' | 'totp-setup' | 'totp-login' | 'backup-codes' | 'code'>(isLoginMode ? 'credentials' : 'credentials');
 
   // Credentials
   const [email, setEmail] = useState('');
@@ -130,9 +130,14 @@ export const AuthModal: React.FC<AuthModalProps> = ({ onClose, onLogin, allowClo
       });
       setUserId(resp.userId || resp.id);
 
-      // After a new account we ask whether to start 2FA or skip it.
-      setMessage('Verifica tu correo para continuar. La seguridad en 2 pasos es opcional.');
-      setStep('2fa-choice');
+      // Setup 2FA - Generate QR and backup codes
+      const twoFASetup: any = await api.setup2FA(resp.userId || resp.id);
+      setTotpSecret(twoFASetup.secret);
+      setTotpQR(twoFASetup.qrCode);
+      setBackupCodes(twoFASetup.backupCodes);
+
+      setMessage('Escanea el código QR con Google Authenticator o similar');
+      setStep('totp-setup');
     } catch (err: any) {
       setMessage('Error al registrarse.');
     } finally {
@@ -155,27 +160,6 @@ export const AuthModal: React.FC<AuthModalProps> = ({ onClose, onLogin, allowClo
       setMessage('Código TOTP inválido. Intenta nuevamente.');
     } finally {
       setLoading(false);
-    }
-  };
-
-  // allow user to skip TOTP setup during registration
-  const handleSkip2FA = () => {
-    setMessage('Puedes configurar la autenticación en dos pasos más tarde desde ajustes.');
-    setStep('code');
-    setResendTimer(60);
-  };
-
-  const start2FAAfterRegister = async () => {
-    if (!userId) return;
-    try {
-      const twoFASetup: any = await api.setup2FA(userId);
-      setTotpSecret(twoFASetup.secret);
-      setTotpQR(twoFASetup.qrCode);
-      setBackupCodes(twoFASetup.backupCodes);
-      setMessage('Escanea el código QR con Google Authenticator o similar');
-      setStep('totp-setup');
-    } catch (err: any) {
-      setMessage('No se pudo iniciar la configuración de 2FA.');
     }
   };
 
@@ -257,56 +241,9 @@ export const AuthModal: React.FC<AuthModalProps> = ({ onClose, onLogin, allowClo
   };
 
   const getProgressBarPercentage = () => {
-    const steps = isLoginMode
-      ? ['credentials', 'totp-login', 'code']
-      : ['credentials', 'profile', 'location', 'photo', '2fa-choice', 'totp-setup', 'backup-codes', 'code'];
+    const steps = isLoginMode ? ['credentials', 'totp-login', 'code'] : ['credentials', 'profile', 'location', 'photo', 'totp-setup', 'backup-codes', 'code'];
     const currentIndex = steps.indexOf(step);
     return ((currentIndex + 1) / steps.length) * 100;
-  };
-
-  // pick the right submit handler once per render
-  const currentSubmitHandler = (() => {
-    switch (step) {
-      case 'credentials':
-        return handleCredentialsSubmit;
-      case 'profile':
-        return handleProfileSubmit;
-      case 'location':
-        return handleLocationSubmit;
-      case 'photo':
-        return handlePhotoSubmit;
-      case 'totp-setup':
-        return handleTOTPSetup;
-      case 'totp-login':
-        return handleTOTPLogin;
-      case 'backup-codes':
-        return (() => { setStep('code'); return true; }) as any;
-      default:
-        return handleCodeSubmit;
-    }
-  })();
-
-  // determine whether submit button should be disabled
-  const isSubmitDisabled = () => {
-    if (loading) return true;
-    switch (step) {
-      case 'credentials':
-        return isLoginMode
-          ? !email.trim() || !password
-          : !email.trim() || !password || !name.trim();
-      case 'profile':
-      case 'location':
-      case 'backup-codes':
-      case 'photo':
-        return false;
-      case 'totp-setup':
-      case 'totp-login':
-        return !totpCode.trim();
-      case 'code':
-        return !code.trim();
-      default:
-        return false;
-    }
   };
 
   return (
@@ -347,9 +284,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ onClose, onLogin, allowClo
                       ? 'Tu avatar'
                       : step === 'totp-setup'
                         ? 'Seguridad en 2 pasos'
-                        : step === '2fa-choice'
-                          ? translations[language]?.twoFAPrompt || '¿Configurar 2FA ahora?'
-                          : step === 'totp-login'
+                        : step === 'totp-login'
                           ? 'Verifica tu identidad'
                           : step === 'backup-codes'
                             ? 'Códigos de respaldo'
@@ -368,13 +303,11 @@ export const AuthModal: React.FC<AuthModalProps> = ({ onClose, onLogin, allowClo
                       ? 'Sube una foto o genera un avatar'
                       : step === 'totp-setup'
                         ? 'Configura autenticación de dos factores'
-                        : step === '2fa-choice'
-                          ? translations[language]?.twoFAPrompt
-                          : step === 'totp-login'
-                            ? 'Usa tu autenticador o código de respaldo'
-                            : step === 'backup-codes'
-                              ? 'Guarda estos códigos por si acaso'
-                              : 'Revisa tu correo'}
+                        : step === 'totp-login'
+                          ? 'Usa tu autenticador o código de respaldo'
+                          : step === 'backup-codes'
+                            ? 'Guarda estos códigos por si acaso'
+                            : 'Revisa tu correo'}
             </p>
           </div>
 
@@ -388,7 +321,16 @@ export const AuthModal: React.FC<AuthModalProps> = ({ onClose, onLogin, allowClo
           )}
 
           <form
-            onSubmit={currentSubmitHandler}
+            onSubmit={
+              step === 'credentials' ? handleCredentialsSubmit
+                : step === 'profile' ? handleProfileSubmit
+                  : step === 'location' ? handleLocationSubmit
+                    : step === 'photo' ? handlePhotoSubmit
+                      : step === 'totp-setup' ? handleTOTPSetup
+                        : step === 'totp-login' ? handleTOTPLogin
+                          : step === 'backup-codes' ? (() => { setStep('code'); return true; }) as any
+                            : handleCodeSubmit
+            }
             className="space-y-4 pt-2 animate-in fade-in duration-300"
           >
             {step === 'credentials' && (
@@ -553,37 +495,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ onClose, onLogin, allowClo
                     autoFocus
                   />
                 </div>
-                <button
-                  type="button"
-                  onClick={handleSkip2FA}
-                  className="mt-2 text-xs text-slate-500 dark:text-slate-400 hover:underline"
-                >
-                  Configurar más tarde
-                </button>
               </>
-            )}
-            {step === '2fa-choice' && (
-              <div className="space-y-4">
-                <p className="text-sm text-slate-600 dark:text-slate-400">
-                  {translations[language]?.twoFAPrompt ?? '¿Quieres configurar autenticación de dos pasos ahora?'}
-                </p>
-                <div className="flex flex-col gap-2">
-                  <button
-                    type="button"
-                    onClick={start2FAAfterRegister}
-                    className="w-full py-3 bg-gradient-to-r from-emerald-600 to-teal-600 text-white font-bold rounded-xl shadow-lg hover:from-emerald-700 hover:to-teal-700 transition-all"
-                  >
-                    {translations[language]?.twoFAXnow ?? 'Sí, configurar ahora'}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={handleSkip2FA}
-                    className="w-full py-3 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-all"
-                  >
-                    {translations[language]?.twoFALater ?? 'No, más tarde'}
-                  </button>
-                </div>
-              </div>
             )}
 
             {step === 'totp-login' && (
@@ -669,12 +581,20 @@ export const AuthModal: React.FC<AuthModalProps> = ({ onClose, onLogin, allowClo
               </>
             )}
 
-            {step !== '2fa-choice' && (
-              <button
-                type="submit"
-                disabled={isSubmitDisabled()}
-                className="w-full py-3 bg-gradient-to-r from-emerald-600 to-teal-600 text-white font-bold rounded-xl shadow-lg shadow-emerald-200 dark:shadow-emerald-900/50 hover:from-emerald-700 hover:to-teal-700 hover:scale-[1.02] transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none flex items-center justify-center gap-2"
-              >
+            <button
+              type="submit"
+              disabled={loading || (
+                step === 'credentials' ? (!isLoginMode ? !email.trim() || !password || !name.trim() : !email.trim() || !password)
+                  : step === 'profile' ? false
+                    : step === 'location' ? false
+                      : step === 'photo' ? false
+                        : step === 'totp-setup' ? !totpCode.trim()
+                          : step === 'totp-login' ? !totpCode.trim()
+                            : step === 'backup-codes' ? false
+                              : !code.trim()
+              )}
+              className="w-full py-3 bg-gradient-to-r from-emerald-600 to-teal-600 text-white font-bold rounded-xl shadow-lg shadow-emerald-200 dark:shadow-emerald-900/50 hover:from-emerald-700 hover:to-teal-700 hover:scale-[1.02] transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none flex items-center justify-center gap-2"
+            >
               {loading ? (
                 <>
                   <Loader2 size={18} className="animate-spin" />
