@@ -93,7 +93,16 @@ PORT=5000
 # credenciales de Gmail usadas para enviar los códigos
 GMAIL_USER=tu_cuenta@gmail.com
 GMAIL_PASS=tu_app_password_o_contraseña
+
+# url pública donde se sirve el frontend (usada en invitaciones y emails)
+# por ejemplo https://app.tudominio.com
+FRONTEND_URL=https://mi-dominio.com
 ```
+
+> Si `FRONTEND_URL` no está definido las URLs por defecto apuntan a `http://localhost:5173`.
+
+Los correos de verificación ahora incluyen un enlace directo que abre la aplicación y
+rellena el código automáticamente para mejorar la experiencia del usuario.
 
 > Gmail suele rechazar intentos de envío si no se permiten aplicaciones menos seguras.
 > Utiliza un *app password* desde la cuenta de Google y asegúrate de que el acceso SMTP

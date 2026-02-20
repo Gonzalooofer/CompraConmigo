@@ -45,7 +45,7 @@ router.post('/send', async (req, res) => {
     await invitation.save();
 
     // Enviar email con invitación
-    const inviteLink = `${process.env.FRONTEND_URL || 'http://localhost:5173'}?invite=${inviteCode}`;
+    const inviteLink = `${process.env.FRONTEND_URL || 'https://compraconmigo.ddns.net'}?invite=${inviteCode}`;
     try {
       await sendInvitationEmail(toEmail, group.name, inviteLink, inviteCode);
     } catch (mailErr) {

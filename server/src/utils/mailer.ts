@@ -14,16 +14,23 @@ const transporter = nodemailer.createTransport({
 });
 
 export const sendVerificationEmail = async (to: string, code: string) => {
+  const frontendUrl = process.env.FRONTEND_URL || 'https://compraconmigo.ddns.net';
+  const link = `${frontendUrl}/?code=${encodeURIComponent(code)}&email=${encodeURIComponent(to)}`;
+
   const mailOptions = {
     from: process.env.GMAIL_USER,
     to,
     subject: 'CompraConmigo – código de verificación',
     html: `
-      <h2>Código de verificación</h2>
-      <p>Tu código es: <strong>${code}</strong></p>
-      <p>Este código expira en 15 minutos.</p>
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+        <h2 style="color:#10b981;">Código de verificación</h2>
+        <p>Usa el siguiente código para verificar tu dirección de correo:</p>
+        <p style="font-size: 24px; font-weight: bold;">${code}</p>
+        <p>Este código expira en 15 minutos.</p>
+        <p>También puedes <a href="${link}">hacer clic aquí</a> para abrir la aplicación e introducirlo automáticamente.</p>
+      </div>
     `,
-    text: `Tu código de verificación es: ${code}`
+    text: `Tu código de verificación es: ${code}. Visita ${link}`
   };
   await transporter.sendMail(mailOptions);
 };
