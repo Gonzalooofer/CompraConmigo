@@ -400,7 +400,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ onClose, onLogin, allowClo
                     placeholder="correo@ejemplo.com"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    className="w-full pl-12 pr-4 py-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-500 outline-none transition-all text-slate-800 dark:text-slate-100 placeholder-slate-400"
+                    className="w-full pl-12 pr-4 py-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-emerald-500\/30 focus:border-emerald-500 outline-none transition-all text-slate-800 dark:text-slate-100 placeholder-slate-400"
                     autoFocus
                   />
                 </div>
@@ -411,7 +411,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ onClose, onLogin, allowClo
                     placeholder="Contraseña segura"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    className="w-full pl-12 pr-4 py-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-500 outline-none transition-all text-slate-800 dark:text-slate-100 placeholder-slate-400"
+                    className="w-full pl-12 pr-4 py-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-emerald-500\/30 focus:border-emerald-500 outline-none transition-all text-slate-800 dark:text-slate-100 placeholder-slate-400"
                   />
                 </div>
                 {!isLoginMode && (
@@ -422,7 +422,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ onClose, onLogin, allowClo
                       placeholder="Tu nombre completo"
                       value={name}
                       onChange={(e) => setName(e.target.value)}
-                      className="w-full pl-12 pr-4 py-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-500 outline-none transition-all text-slate-800 dark:text-slate-100 placeholder-slate-400"
+                      className="w-full pl-12 pr-4 py-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-emerald-500\/30 focus:border-emerald-500 outline-none transition-all text-slate-800 dark:text-slate-100 placeholder-slate-400"
                     />
                   </div>
                 )}
@@ -458,7 +458,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ onClose, onLogin, allowClo
                     placeholder="+34 612 345 678 (opcional)"
                     value={phoneNumber}
                     onChange={(e) => setPhoneNumber(e.target.value)}
-                    className="w-full pl-12 pr-4 py-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-500 outline-none transition-all text-slate-800 dark:text-slate-100 placeholder-slate-400"
+                    className="w-full pl-12 pr-4 py-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-emerald-500\/30 focus:border-emerald-500 outline-none transition-all text-slate-800 dark:text-slate-100 placeholder-slate-400"
                   />
                 </div>
               </>
@@ -471,7 +471,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ onClose, onLogin, allowClo
                   <select
                     value={country}
                     onChange={(e) => setCountry(e.target.value)}
-                    className="w-full pl-12 pr-4 py-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-500 outline-none transition-all text-slate-800 dark:text-slate-100"
+                    className="w-full pl-12 pr-4 py-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-emerald-500\/30 focus:border-emerald-500 outline-none transition-all text-slate-800 dark:text-slate-100"
                   >
                     <option value="">Selecciona país (opcional)</option>
                     {COUNTRIES.map(c => (
