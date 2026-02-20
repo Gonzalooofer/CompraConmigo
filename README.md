@@ -56,6 +56,10 @@ El sistema de autenticación ha sido ampliado para soportar registro/inicio con 
 
 1. **Registro**
    - El usuario introduce email, contraseña y nombre (obligatorio).
+   - Tras completar los datos se le ofrece configurar la **autenticación en dos pasos (2FA)**
+     mediante QR/Google Authenticator; este paso es opcional y puede omitirse con un botón
+     "Configurar más tarde", lo que permite continuar directamente al envío del código de verificación
+     por email.
    - Si el correo no existe en la base de datos se crea un nuevo `User` con la contraseña
      almacenada como hash (bcrypt) y se genera un código de verificación válido 15 minutos.
    - El servidor intenta enviar dicho código al correo; si el envío falla la cuenta sigue siendo

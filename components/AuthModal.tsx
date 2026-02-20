@@ -130,14 +130,21 @@ export const AuthModal: React.FC<AuthModalProps> = ({ onClose, onLogin, allowClo
       });
       setUserId(resp.userId || resp.id);
 
-      // Setup 2FA - Generate QR and backup codes
-      const twoFASetup: any = await api.setup2FA(resp.userId || resp.id);
-      setTotpSecret(twoFASetup.secret);
-      setTotpQR(twoFASetup.qrCode);
-      setBackupCodes(twoFASetup.backupCodes);
-
-      setMessage('Escanea el código QR con Google Authenticator o similar');
-      setStep('totp-setup');
+      // try to prepare 2FA; if it fails we still continue to code step
+      try {
+        const twoFASetup: any = await api.setup2FA(resp.userId || resp.id);
+        setTotpSecret(twoFASetup.secret);
+        setTotpQR(twoFASetup.qrCode);
+        setBackupCodes(twoFASetup.backupCodes);
+        setMessage('Escanea el código QR con Google Authenticator o similar');
+        setStep('totp-setup');
+      } catch (errSetup) {
+        // non-critical; proceed to email verification without 2FA
+        console.error('2FA setup error during registration', errSetup);
+        setMessage('Registro completado. Verifica tu email.');
+        setStep('code');
+        setResendTimer(60);
+      }
     } catch (err: any) {
       setMessage('Error al registrarse.');
     } finally {
@@ -161,6 +168,18 @@ export const AuthModal: React.FC<AuthModalProps> = ({ onClose, onLogin, allowClo
     } finally {
       setLoading(false);
     }
+  };
+
+  // user opted to skip 2FA setup during registration
+  const handleSkip2FA = () => {
+    // clear any temporary data to avoid confusion
+    setTotpSecret('');
+    setTotpQR('');
+    setBackupCodes([]);
+    setTotpCode('');
+    setMessage('Verifica tu email');
+    setStep('code');
+    setResendTimer(60);
   };
 
   const handleTOTPLogin = async (e: React.FormEvent) => {
@@ -241,9 +260,18 @@ export const AuthModal: React.FC<AuthModalProps> = ({ onClose, onLogin, allowClo
   };
 
   const getProgressBarPercentage = () => {
-    const steps = isLoginMode ? ['credentials', 'totp-login', 'code'] : ['credentials', 'profile', 'location', 'photo', 'totp-setup', 'backup-codes', 'code'];
-    const currentIndex = steps.indexOf(step);
-    return ((currentIndex + 1) / steps.length) * 100;
+    if (isLoginMode) {
+      const steps = ['credentials', 'totp-login', 'code'];
+      const currentIndex = steps.indexOf(step);
+      return ((currentIndex + 1) / steps.length) * 100;
+    } else {
+      // If the user has skipped/failed 2FA setup we don't include those steps
+      const baseSteps = ['credentials', 'profile', 'location', 'photo'];
+      const twoFASteps = totpSecret ? ['totp-setup', 'backup-codes'] : [];
+      const steps = [...baseSteps, ...twoFASteps, 'code'];
+      const currentIndex = steps.indexOf(step);
+      return ((currentIndex + 1) / steps.length) * 100;
+    }
   };
 
   return (
@@ -478,7 +506,8 @@ export const AuthModal: React.FC<AuthModalProps> = ({ onClose, onLogin, allowClo
                   {totpQR && <img src={totpQR} alt="TOTP QR Code" className="w-48 h-48 border-2 border-emerald-200 dark:border-emerald-800 rounded-xl p-2 bg-white" />}
                 </div>
                 <p className="text-xs text-slate-500 dark:text-slate-400 text-center">
-                  Escanea este código QR con Google Authenticator, Authy o Microsoft Authenticator
+                  Escanea este código QR con Google Authenticator, Authy o Microsoft Authenticator,
+                  o pulsa "Configurar más tarde" para continuar sin 2FA.
                 </p>
                 <p className="text-xs text-slate-700 dark:text-slate-300 font-mono bg-slate-50 dark:bg-slate-800 p-2 rounded text-center break-all">
                   {totpSecret}
@@ -491,10 +520,18 @@ export const AuthModal: React.FC<AuthModalProps> = ({ onClose, onLogin, allowClo
                     value={totpCode}
                     onChange={(e) => setTotpCode(e.target.value)}
                     maxLength={6}
-                    className="w-full pl-12 pr-4 py-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-500 outline-none transition-all text-slate-800 dark:text-slate-100 placeholder-slate-400 text-center font-mono tracking-widest"
+                    className="w-full pl-12 pr-4 py-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-emerald-700 rounded-xl focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-500 outline-none transition-all text-slate-800 dark:text-slate-100 placeholder-slate-400 text-center font-mono tracking-widest"
                     autoFocus
                   />
                 </div>
+                {/* skip option */}
+                <button
+                  type="button"
+                  onClick={handleSkip2FA}
+                  className="text-sm text-slate-500 dark:text-slate-400 hover:text-emerald-600 transition-colors mt-4"
+                >
+                  Configurar más tarde
+                </button>
               </>
             )}
 
@@ -624,6 +661,12 @@ export const AuthModal: React.FC<AuthModalProps> = ({ onClose, onLogin, allowClo
                 setName('');
                 setMessage(null);
                 setStep('credentials');
+                setTotpSecret('');
+                setTotpQR('');
+                setBackupCodes([]);
+                setTotpCode('');
+                setUseBackupCode(false);
+                setUserId(null);
               }}
               className="text-sm text-slate-500 dark:text-slate-400 hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors font-medium"
             >
