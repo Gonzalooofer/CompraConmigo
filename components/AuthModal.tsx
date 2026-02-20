@@ -486,7 +486,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ onClose, onLogin, allowClo
                     placeholder="Ciudad (opcional)"
                     value={city}
                     onChange={(e) => setCity(e.target.value)}
-                    className="w-full pl-12 pr-4 py-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-500 outline-none transition-all text-slate-800 dark:text-slate-100 placeholder-slate-400"
+                    className="w-full pl-12 pr-4 py-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-emerald-500\/30 focus:border-emerald-500 outline-none transition-all text-slate-800 dark:text-slate-100 placeholder-slate-400"
                   />
                 </div>
                 <div className="relative group">
@@ -496,7 +496,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ onClose, onLogin, allowClo
                     placeholder="CP (opcional)"
                     value={postalCode}
                     onChange={(e) => setPostalCode(e.target.value)}
-                    className="w-full pl-12 pr-4 py-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-500 outline-none transition-all text-slate-800 dark:text-slate-100 placeholder-slate-400"
+                    className="w-full pl-12 pr-4 py-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-emerald-500\/30 focus:border-emerald-500 outline-none transition-all text-slate-800 dark:text-slate-100 placeholder-slate-400"
                   />
                 </div>
               </>
@@ -549,7 +549,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ onClose, onLogin, allowClo
                     value={totpCode}
                     onChange={(e) => setTotpCode(e.target.value)}
                     maxLength={6}
-                    className="w-full pl-12 pr-4 py-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-500 outline-none transition-all text-slate-800 dark:text-slate-100 placeholder-slate-400 text-center font-mono tracking-widest"
+                    className="w-full pl-12 pr-4 py-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-emerald-500\/30 focus:border-emerald-500 outline-none transition-all text-slate-800 dark:text-slate-100 placeholder-slate-400 text-center font-mono tracking-widest"
                     autoFocus
                   />
                 </div>
@@ -596,7 +596,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ onClose, onLogin, allowClo
                     value={totpCode}
                     onChange={(e) => setTotpCode(e.target.value)}
                     maxLength={useBackupCode ? 8 : 6}
-                    className="w-full pl-12 pr-4 py-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-500 outline-none transition-all text-slate-800 dark:text-slate-100 placeholder-slate-400 text-center font-mono tracking-widest"
+                    className="w-full pl-12 pr-4 py-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-emerald-500\/30 focus:border-emerald-500 outline-none transition-all text-slate-800 dark:text-slate-100 placeholder-slate-400 text-center font-mono tracking-widest"
                     autoFocus
                   />
                 </div>
@@ -654,7 +654,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ onClose, onLogin, allowClo
                     value={code}
                     onChange={(e) => setCode(e.target.value)}
                     maxLength={6}
-                    className="w-full pl-12 pr-4 py-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-500 outline-none transition-all text-slate-800 dark:text-slate-100 placeholder-slate-400 text-center text-lg font-mono tracking-widest"
+                    className="w-full pl-12 pr-4 py-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-emerald-500\/30 focus:border-emerald-500 outline-none transition-all text-slate-800 dark:text-slate-100 placeholder-slate-400 text-center text-lg font-mono tracking-widest"
                     autoFocus
                   />
                 </div>
