@@ -120,6 +120,25 @@ La aplicación se ejecuta en una instancia EC2 (o similar) con Node.js y MongoDB
 ### Variables de entorno en AWS
 Asegúrate de que las variables (`MONGO_URI`, `GMAIL_USER`, `GMAIL_PASS`, etc.) siguen presentes. Puedes exportarlas en el script de arranque (`.bashrc`/`.profile`) o gestionarlas vía `pm2 ecosystem.config.js`.
 
+
+### Cargas de imagen de perfil
+
+La aplicación ahora permite subir un fichero de imagen para el avatar del usuario en lugar de
+usar cadenas `data:` en base64. Para que esto funcione necesitas instalar `multer` en el servidor:
+
+```bash
+cd server
+npm install multer
+npm install --save-dev @types/multer
+```
+
+El backend guarda los archivos en `uploads/avatars` y los sirve mediante `/uploads/...`.
+El cliente pedirá primero la carga y luego actualizará el resto de datos del usuario.
+
+También se ha mejorado el componente de edición de perfil para que toda el área del avatar sea
+clicable y el campo de fichero acepte imágenes y envíe los datos al nuevo endpoint.
+
+
 ---
 
 ## 📄 Licencia & Créditos
