@@ -69,6 +69,18 @@ export const ProfileEditModal: React.FC<ProfileEditModalProps> = ({ user, onClos
         alert('No se pudo subir la imagen. Intenta con un archivo más pequeño.');
         return;
       }
+    } else if (avatar.startsWith('data:')) {
+      // fallback: user picked a file but we didn't capture it (e.g. older build)
+      try {
+        const blob = await (await fetch(avatar)).blob();
+        const fallbackFile = new File([blob], 'avatar.png', { type: blob.type });
+        const resp: any = await api.uploadAvatar(user.id, fallbackFile);
+        finalAvatar = resp.avatar;
+      } catch (err) {
+        console.error('Error subiendo avatar desde data-url', err);
+        alert('No se pudo subir la imagen. Intenta con un archivo más pequeño.');
+        return;
+      }
     }
 
     onSave(user.id, {
