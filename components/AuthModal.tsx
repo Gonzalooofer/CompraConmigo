@@ -324,11 +324,12 @@ export const AuthModal: React.FC<AuthModalProps> = ({ onClose, onLogin, allowClo
                       : step === 'totp-setup'
                         ? 'Configura autenticación de dos factores'
                         : step === '2fa-choice'
-                          ? translations[language]?.twoFAPrompt /* reuse prompt as description */ : step === 'totp-login'
-                          ? 'Usa tu autenticador o código de respaldo'
-                          : step === 'backup-codes'
-                            ? 'Guarda estos códigos por si acaso'
-                            : 'Revisa tu correo'}
+                          ? translations[language]?.twoFAPrompt
+                          : step === 'totp-login'
+                            ? 'Usa tu autenticador o código de respaldo'
+                            : step === 'backup-codes'
+                              ? 'Guarda estos códigos por si acaso'
+                              : 'Revisa tu correo'}
             </p>
           </div>
 
