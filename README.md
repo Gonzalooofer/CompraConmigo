@@ -71,7 +71,7 @@ La aplicación está desplegada en AWS; estos documentos cubren cómo levantarla
 El proceso de registro e inicio de sesión está centralizado en `components/AuthModal.tsx`. Algunas notas clave:
 
 - **Verificación de correo:** obligatorio. Se envía un código al correo que debe introducirse antes de continuar.
-- **2FA:** se ofrece un paso adicional durante el registro para configurar un autenticador. El usuario ahora puede omitir esta etapa pulsando **"Configurar más tarde"** y completar la verificación por email; la opción permanece disponible en Ajustes.
+- **2FA:** se ofrece un paso adicional durante el registro para configurar un autenticador. Durante el registro el usuario verá una pregunta "¿Quieres configurar 2FA ahora?" y podrá elegir entre configurarlo inmediatamente o continuar sin él; en cualquier caso el flujo de verificación por email es obligatorio. Si desea activar 2FA después, podrá hacerlo desde **Ajustes → Seguridad**.
 - El servidor genera secreto y códigos de respaldo al llamar a `POST /api/2fa/setup`, pero la cuenta no queda protegida hasta verificar (`POST /api/2fa/verify`).
 
 Rutas relevantes:
