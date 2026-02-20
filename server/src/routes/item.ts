@@ -5,10 +5,14 @@ const router = Router();
 
 router.post('/', async (req, res) => {
   try {
-    const item = new Item(req.body);
+    const data = { ...req.body };
+    delete data.id;
+    delete data._id;
+    const item = new Item(data);
     const saved = await item.save();
     res.status(201).json(saved);
   } catch (err) {
+    console.error('❌ Error saving item:', err);
     res.status(400).json({ error: err });
   }
 });

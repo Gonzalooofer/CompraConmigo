@@ -18,8 +18,12 @@ export interface User {
   color: string;
   email?: string; // disponible si el usuario se registró con correo
   verified?: boolean; // indica si el correo fue confirmado
-  phoneNumber?: string; // Nuevo para Bizum
-  plan?: 'free' | 'premium' | 'family'; // Nuevo plan
+  phoneNumber?: string; // Para Bizum
+  country?: string; // País del usuario
+  city?: string; // Ciudad del usuario
+  postalCode?: string; // Código postal
+  plan?: 'free' | 'premium' | 'family'; // Plan del usuario
+  twoFAEnabled?: boolean;
 }
 
 export interface Group {

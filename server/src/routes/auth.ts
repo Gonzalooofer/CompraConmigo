@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import bcrypt from 'bcrypt';
+import * as crypto from 'crypto';
 import User from '../models/user';
 import { sendVerificationEmail } from '../utils/mailer';
 
@@ -9,9 +10,9 @@ function makeCode() {
   return Math.floor(100000 + Math.random() * 900000).toString();
 }
 
-// register new user (name, email, password)
+// register new user (name, email, password, phoneNumber, country, city, postalCode)
 router.post('/register', async (req, res) => {
-  const { name, email, password } = req.body;
+  const { name, email, password, phoneNumber, country, city, postalCode } = req.body;
   if (!name || !email || !password) {
     return res.status(400).json({ error: 'Name, email and password are required' });
   }
@@ -30,6 +31,10 @@ router.post('/register', async (req, res) => {
       name,
       email,
       passwordHash,
+      phoneNumber: phoneNumber || undefined,
+      country: country || undefined,
+      city: city || undefined,
+      postalCode: postalCode || undefined,
       avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${name}`,
       color: 'bg-purple-500',
       verified: false,
@@ -46,7 +51,10 @@ router.post('/register', async (req, res) => {
       mailWarning = true;
       // don't fail registration just because mail failed
     }
-    const response: any = { message: 'Verification code sent' };
+    const response: any = { 
+      message: 'Verification code sent',
+      userId: user._id || user.id
+    };
     if (mailWarning) response.warning = 'failed to send email';
     res.status(201).json(response);
   } catch (err) {
@@ -55,7 +63,7 @@ router.post('/register', async (req, res) => {
   }
 });
 
-// login with email + password
+// login with email + password (generates login code)
 router.post('/login', async (req, res) => {
   const { email, password } = req.body;
   if (!email || !password) return res.status(400).json({ error: 'Email and password required' });
@@ -67,13 +75,30 @@ router.post('/login', async (req, res) => {
   const match = await bcrypt.compare(password, user.passwordHash || '');
   if (!match) return res.status(401).json({ error: 'Incorrect password' });
 
-  const result: any = user.toObject();
-  delete result.passwordHash;
-  delete result.verificationCode;
-  delete result.verificationExpires;
-  delete result.__v;
-  result.id = result._id || result.id;
-  res.json(result);
+  // If 2FA is enabled, do NOT send verification email now.
+  // The frontend will ask for the TOTP code instead.
+  if (user.twoFAEnabled) {
+    return res.json({
+      message: '2FA_REQUIRED',
+      userId: user._id,
+      twoFAEnabled: true
+    });
+  }
+
+  // Generate login code
+  const code = makeCode();
+  user.loginCode = code;
+  user.loginCodeExpires = new Date(Date.now() + 15 * 60 * 1000);
+  user.lastCodeSentAt = new Date();
+  await user.save();
+
+  try {
+    await sendVerificationEmail(email, code);
+    res.json({ message: 'Login code sent to email', twoFAEnabled: false });
+  } catch (mailErr) {
+    console.error('email send failure (login)', mailErr);
+    res.json({ warning: 'failed to send email', twoFAEnabled: false });
+  }
 });
 
 // resend verification code (throttled to 60s)
@@ -133,8 +158,57 @@ router.post('/verify', async (req, res) => {
   delete result.verificationCode;
   delete result.verificationExpires;
   delete result.__v;
+  delete result.loginCode;
+  delete result.loginCodeExpires;
   result.id = result._id || result.id;
   res.json(result);
 });
 
+// verify login code
+router.post('/verify-login', async (req, res) => {
+  const { email, code, rememberMe } = req.body;
+  if (!email || !code) {
+    return res.status(400).json({ error: 'Email and code are required' });
+  }
+
+  const user = await User.findOne({ email });
+  if (!user) return res.status(404).json({ error: 'User not found' });
+
+  if (user.loginCode !== code) {
+    return res.status(400).json({ error: 'Invalid login code' });
+  }
+  if (user.loginCodeExpires && user.loginCodeExpires < new Date()) {
+    return res.status(400).json({ error: 'Login code expired' });
+  }
+
+  user.loginCode = undefined;
+  user.loginCodeExpires = undefined;
+
+  // Generate remember-me token if requested
+  let rememberMeToken;
+  if (rememberMe) {
+    rememberMeToken = crypto.randomBytes(32).toString('hex');
+    user.rememberMeToken = rememberMeToken;
+  }
+
+  await user.save();
+
+  // return normalized/sanitized user
+  const result: any = user.toObject();
+  delete result.passwordHash;
+  delete result.verificationCode;
+  delete result.verificationExpires;
+  delete result.loginCode;
+  delete result.loginCodeExpires;
+  delete result.__v;
+  result.id = result._id || result.id;
+
+  if (rememberMeToken) {
+    result.rememberMeToken = rememberMeToken;
+  }
+
+  res.json(result);
+});
+
 export default router;
+
