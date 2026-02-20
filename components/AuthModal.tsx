@@ -264,6 +264,31 @@ export const AuthModal: React.FC<AuthModalProps> = ({ onClose, onLogin, allowClo
     return ((currentIndex + 1) / steps.length) * 100;
   };
 
+  // determine whether submit button should be disabled
+  const isSubmitDisabled = () => {
+    if (loading) return true;
+    switch (step) {
+      case 'credentials':
+        return isLoginMode
+          ? !email.trim() || !password
+          : !email.trim() || !password || !name.trim();
+      case 'profile':
+      case 'location':
+      case 'backup-codes':
+        return false;
+      case 'photo':
+        return false;
+      case 'totp-setup':
+        return !totpCode.trim();
+      case 'totp-login':
+        return !totpCode.trim();
+      case 'code':
+        return !code.trim();
+      default:
+        return false;
+    }
+  };
+
   return (
     <div className={`fixed inset-0 z-[60] flex items-center justify-center p-4 bg-slate-950/90 backdrop-blur-sm transition-all duration-300 ${!allowClose ? 'bg-slate-950' : ''}`}>
       <div className="bg-white dark:bg-slate-900 w-full max-w-sm rounded-3xl overflow-hidden shadow-2xl animate-in zoom-in-95 duration-300 border border-slate-100 dark:border-slate-800">
