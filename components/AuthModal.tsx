@@ -163,6 +163,13 @@ export const AuthModal: React.FC<AuthModalProps> = ({ onClose, onLogin, allowClo
     }
   };
 
+  // allow user to skip TOTP setup during registration
+  const handleSkip2FA = () => {
+    setMessage('Puedes configurar la autenticación en dos pasos más tarde desde ajustes.');
+    setStep('code');
+    setResendTimer(60);
+  };
+
   const handleTOTPLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);

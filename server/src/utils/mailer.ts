@@ -17,13 +17,30 @@ export const sendVerificationEmail = async (to: string, code: string) => {
   const mailOptions = {
     from: process.env.GMAIL_USER,
     to,
-    subject: 'CompraConmigo – código de verificación',
+    subject: 'CompraConmigo – verifica tu correo',
     html: `
-      <h2>Código de verificación</h2>
-      <p>Tu código es: <strong>${code}</strong></p>
-      <p>Este código expira en 15 minutos.</p>
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+        <div style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: white; padding: 30px; border-radius: 10px 10px 0 0; text-align: center;">
+          <h1 style="margin:0;font-size:28px;">CompraConmigo</h1>
+        </div>
+        <div style="background: #ffffff; padding: 30px; border-radius: 0 0 10px 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1);">
+          <h2 style="color:#1f2937;">Verifica tu dirección de correo</h2>
+          <p style="color:#6b7280;font-size:16px;line-height:1.6;">
+            Gracias por registrarte en CompraConmigo. Para completar el proceso de creación de cuenta, introduce el siguiente código en la aplicación:
+          </p>
+          <p style="font-size:24px;font-weight:bold;color:#10b981;text-align:center;letter-spacing:2px;margin:20px 0;">${code}</p>
+          <p style="color:#6b7280;font-size:14px;">Este código expira en 15 minutos.</p>
+          <hr style="border:none;border-top:1px solid #e5e7eb;margin:20px 0;"/>
+          <p style="color:#9ca3af;font-size:12px;text-align:center;margin:0;">
+            Si no solicitaste este correo, simplemente ignóralo.
+          </p>
+          <p style="color:#9ca3af;font-size:12px;text-align:center;margin:0;">
+            © 2026 CompraConmigo. Compra inteligente, en equipo.
+          </p>
+        </div>
+      </div>
     `,
-    text: `Tu código de verificación es: ${code}`
+    text: `Tu código de verificación en CompraConmigo es: ${code}. El código expira en 15 minutos.`
   };
   await transporter.sendMail(mailOptions);
 };
