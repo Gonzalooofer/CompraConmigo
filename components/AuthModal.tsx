@@ -264,6 +264,28 @@ export const AuthModal: React.FC<AuthModalProps> = ({ onClose, onLogin, allowClo
     return ((currentIndex + 1) / steps.length) * 100;
   };
 
+  // pick the right submit handler once per render
+  const currentSubmitHandler = (() => {
+    switch (step) {
+      case 'credentials':
+        return handleCredentialsSubmit;
+      case 'profile':
+        return handleProfileSubmit;
+      case 'location':
+        return handleLocationSubmit;
+      case 'photo':
+        return handlePhotoSubmit;
+      case 'totp-setup':
+        return handleTOTPSetup;
+      case 'totp-login':
+        return handleTOTPLogin;
+      case 'backup-codes':
+        return (() => { setStep('code'); return true; }) as any;
+      default:
+        return handleCodeSubmit;
+    }
+  })();
+
   // determine whether submit button should be disabled
   const isSubmitDisabled = () => {
     if (loading) return true;
@@ -275,11 +297,9 @@ export const AuthModal: React.FC<AuthModalProps> = ({ onClose, onLogin, allowClo
       case 'profile':
       case 'location':
       case 'backup-codes':
-        return false;
       case 'photo':
         return false;
       case 'totp-setup':
-        return !totpCode.trim();
       case 'totp-login':
         return !totpCode.trim();
       case 'code':
@@ -360,24 +380,15 @@ export const AuthModal: React.FC<AuthModalProps> = ({ onClose, onLogin, allowClo
 
           {message && (
             <div className={`text-sm p-3 rounded-lg animate-in fade-in ${message.includes('Error') || message.includes('incorrecta') || message.includes('incorrecto')
-              ? 'bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400'
-              : 'bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400'
+              ? 'bg-red-50 dark:bg-red-900\/20 text-red-600 dark:text-red-400'
+              : 'bg-emerald-50 dark:bg-emerald-900\/20 text-emerald-600 dark:text-emerald-400'
               }`}>
               {message}
             </div>
           )}
 
           <form
-            onSubmit={
-              step === 'credentials' ? handleCredentialsSubmit
-                : step === 'profile' ? handleProfileSubmit
-                  : step === 'location' ? handleLocationSubmit
-                    : step === 'photo' ? handlePhotoSubmit
-                      : step === 'totp-setup' ? handleTOTPSetup
-                        : step === 'totp-login' ? handleTOTPLogin
-                          : step === 'backup-codes' ? (() => { setStep('code'); return true; }) as any
-                            : handleCodeSubmit
-            }
+            onSubmit={currentSubmitHandler}
             className="space-y-4 pt-2 animate-in fade-in duration-300"
           >
             {step === 'credentials' && (
@@ -661,17 +672,8 @@ export const AuthModal: React.FC<AuthModalProps> = ({ onClose, onLogin, allowClo
             {step !== '2fa-choice' && (
               <button
                 type="submit"
-                disabled={loading || (
-                  step === 'credentials' ? (!isLoginMode ? !email.trim() || !password || !name.trim() : !email.trim() || !password)
-                    : step === 'profile' ? false
-                      : step === 'location' ? false
-                        : step === 'photo' ? false
-                          : step === 'totp-setup' ? !totpCode.trim()
-                            : step === 'totp-login' ? !totpCode.trim()
-                              : step === 'backup-codes' ? false
-                                : !code.trim()
-                )}
-                className="w-full py-3 bg-gradient-to-r from-emerald-600 to-teal-600 text-white font-bold rounded-xl shadow-lg shadow-emerald-200 dark:shadow-emerald-900/50 hover:from-emerald-700 hover:to-teal-700 hover:scale-[1.02] transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none flex items-center justify-center gap-2"
+                disabled={isSubmitDisabled()}
+                className="w-full py-3 bg-gradient-to-r from-emerald-600 to-teal-600 text-white font-bold rounded-xl shadow-lg shadow-emerald-200 dark:shadow-emerald-900\/50 hover:from-emerald-700 hover:to-teal-700 hover:scale-[1.02] transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none flex items-center justify-center gap-2"
               >
               {loading ? (
                 <>
