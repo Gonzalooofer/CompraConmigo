@@ -101,21 +101,46 @@ const App: React.FC = () => {
     ? settlements.filter(s => s.groupId === currentGroup.id)
     : [];
 
-  // Handle URL Invitations
+  // Handle URL Invitations (join codes or email invites)
   useEffect(() => {
     if (!currentUser) return;
 
     const url = new URL(window.location.href);
     const joinGroupId = url.searchParams.get('join');
     const joinGroupName = url.searchParams.get('name');
+    const inviteCode = url.searchParams.get('invite');
+
+    // first handle invite code from email
+    if (inviteCode) {
+      api.acceptInvitation(inviteCode, currentUser.id)
+        .then(resp => {
+          const gid: string = resp.groupId;
+          // refresh groups list from server
+          api.getGroups().then(all => {
+            setGroups(all);
+            const joined = all.find(g => g.id === gid);
+            if (joined) {
+              setCurrentGroup(joined);
+              alert(`¡Te has unido al grupo "${joined.name}"!`);
+            }
+          });
+        })
+        .catch(err => {
+          console.error('accept invitation failed', err);
+          alert('No se pudo procesar la invitación.');
+        });
+
+      // clean url and done, we don't also process join param
+      window.history.replaceState({}, '', window.location.pathname);
+      return;
+    }
 
     if (joinGroupId && joinGroupName) {
-      // Check if user is already in this group
+      // existing join-by-id logic
       const existingGroup = groups.find(g => g.id === joinGroupId);
 
       if (existingGroup) {
         if (!existingGroup.members.includes(currentUser.id)) {
-          // Add user to existing group on backend
           api.updateGroup(joinGroupId, { members: [...existingGroup.members, currentUser.id] })
             .then(updated => {
               setGroups(prev => prev.map(g => g.id === joinGroupId ? updated : g));
@@ -127,7 +152,6 @@ const App: React.FC = () => {
           setCurrentGroup(existingGroup);
         }
       } else {
-        // Group doesn't exist locally or is new, try to fetch/join anyway
         api.getGroups().then(allGroups => {
           const groupFromServer = allGroups.find(g => g.id === joinGroupId);
           if (groupFromServer) {
@@ -145,7 +169,6 @@ const App: React.FC = () => {
         });
       }
 
-      // Clean URL
       window.history.replaceState({}, '', window.location.pathname);
     }
   }, [currentUser, groups]);
