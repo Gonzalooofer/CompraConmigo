@@ -1,90 +1,99 @@
 <div align="center">
-<img width="1200" height="475" alt="GHBanner" src="https://ibb.co/rK6SBMPN" />
+<img src="assets/banner.jpg" alt="CompraConmigo Banner" width="800">
+
+# CompraConmigo 🛒✨
+### Tu lista de la compra, reinventada. Colaborativa, inteligente y equitativa.
+
+[![React](https://img.shields.io/badge/React-19-61DAFB?style=for-the-badge&logo=react&logoColor=black)](https://reactjs.org/)
+[![Vite](https://img.shields.io/badge/Vite-6-646CFF?style=for-the-badge&logo=vite&logoColor=white)](https://vitejs.dev/)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5-3178C6?style=for-the-badge&logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
+[![MongoDB](https://img.shields.io/badge/MongoDB-47A248?style=for-the-badge&logo=mongodb&logoColor=white)](https://www.mongodb.com/)
+
 </div>
-
-
-### Autenticación con correo y contraseña
-
-El sistema de autenticación ha sido ampliado para soportar registro/inicio con **email y contraseña**, acompañado de un código de verificación enviado por Gmail.
-
-1. **Registro**
-   - El usuario introduce email, contraseña y nombre (obligatorio).
-   - Tras completar los datos se le ofrece configurar la **autenticación en dos pasos (2FA)**
-     mediante QR/Google Authenticator; este paso es opcional y puede omitirse con un botón
-     "Configurar más tarde", lo que permite continuar directamente al envío del código de verificación
-     por email.
-   - Si el correo no existe en la base de datos se crea un nuevo `User` con la contraseña
-     almacenada como hash (bcrypt) y se genera un código de verificación válido 15 minutos.
-   - El servidor intenta enviar dicho código al correo; si el envío falla la cuenta sigue siendo
-     creada y el usuario podrá solicitar el código más tarde.
-2. **Verificación**
-   - Antes de acceder a la aplicación el usuario debe introducir el código recibido.
-   - El modal de autenticación (`components/AuthModal.tsx`) muestra un botón **Reenviar código**
-     que queda deshabilitado durante 60 s tras cada envío.
-3. **Inicio de sesión posterior**
-   - Una vez verificado, el usuario puede iniciar sesión con email y contraseña.
-   - Si la contraseña es incorrecta se muestra un error; si el correo no estuviera verificado,
-     se reenvía automáticamente un código.
-   - El flujo de “olvidé mi contraseña” no está implementado en este cambio, pero el usuario siempre
-     puede iniciar sesión mediante el código si no recuerda la contraseña.
-
-El campo `email` del modelo `User` se mantiene opcional para no afectar a los usuarios existentes.
-
-#### Rutas nuevas del API
-- `POST /api/auth/register` – {name,email,password} crea la cuenta y envía código.
-- `POST /api/auth/login` – {email,password} autentica si está verificado.
-- `POST /api/auth/verify` – {email,code} marca como verificado y devuelve el usuario.
-- `POST /api/auth/resend` – {email} genera y envía un nuevo código (límite 1/minuto).
-
-#### Configuración de entorno
-En `server/.env` (no se hace commit) deben definirse al menos:
-
-```env
-MONGO_URI=mongodb://…
-PORT=5000
-
-# credenciales de Gmail usadas para enviar los códigos
-GMAIL_USER=tu_cuenta@gmail.com
-GMAIL_PASS=tu_app_password_o_contraseña
-
-# url pública donde se sirve el frontend (usada en invitaciones y emails)
-# por ejemplo https://app.tudominio.com
-FRONTEND_URL=https://mi-dominio.com
-```
-
-> Si `FRONTEND_URL` no está definido las URLs por defecto apuntan a `http://localhost:5173`.
-
-Los correos de verificación ahora incluyen un enlace directo que abre la aplicación y
-rellena el código automáticamente para mejorar la experiencia del usuario.
-
-> Gmail suele rechazar intentos de envío si no se permiten aplicaciones menos seguras.
-> Utiliza un *app password* desde la cuenta de Google y asegúrate de que el acceso SMTP
-> esté habilitado.
-
-#### Dependencias adicionales
-Desde el directorio `server` instala:
-
-```bash
-npm install
-npm install nodemailer bcrypt
-npm install -D @types/nodemailer @types/bcrypt
-```
-
-En el frontend se añade soporte de lectura de QR para productos. Agrega la librería correspondiente:
-
-```bash
-npm install html5-qrcode
-```
-
-Esto permite escanear un código del producto y añadirlo automáticamente a la lista mediante la cámara del dispositivo.
-
-Esto añade `nodemailer` (para enviar emails) y `bcrypt` (para proteger contraseñas).
-
-#### Notas de implementación
-- Todo el código relacionado está dentro de `server/src/routes/auth.ts` y `components/AuthModal.tsx`.
-- El resto de la aplicación (CRUD de usuarios, grupos, listas, etc.) es compatible y no se ha tocado.
 
 ---
 
-El texto anterior se conserva como referencia histórica, pero el flujo actual ya no se basa solo en
-un simple nombre.
+## 🚀 ¿Qué es CompraConmigo?
+
+**CompraConmigo** es una plataforma moderna diseñada para simplificar la gestión de compras compartidas. Ya sea para parejas, familias o compañeros de piso, esta aplicación permite coordinar las necesidades del hogar en tiempo real, eliminando la confusión y asegurando que las finanzas comunes sean siempre transparentes.
+
+---
+
+## ✨ Características Principales
+
+*   **🤝 Listas Colaborativas:** Sincronización instantánea entre todos los miembros de un grupo.
+*   **⚖️ División de Gastos (Splitter):** Cálculo automático de deudas y liquidación de pagos entre usuarios.
+*   **👥 Gestión de Grupos:** Crea múltiples grupos (Hogar, Viaje, Fiesta) e invita a otros mediante enlaces o nombres.
+*   **📸 Escaneo de Productos:** Facilidad para añadir artículos rápidamente a la lista.
+*   **🛡️ Seguridad Avanzada:** Autenticación por email con verificación por código y cifrado de contraseñas con Bcrypt.
+*   **🌓 Experiencia Premium:** Interfaz adaptable con Modo Oscuro, animaciones suaves y un diseño visualmente impactante.
+*   **📊 Análisis de Gastos:** Visualiza tus consumos mediante gráficos detallados gracias a Recharts.
+
+---
+
+## 🛠️ Stack Tecnológico
+
+### Frontend
+- **React 19 & Vite**: Para una experiencia de usuario rápida y fluida.
+- **Lucide React**: Iconografía elegante.
+- **Tailwind CSS**: Estilizado moderno y responsivo.
+- **Recharts**: Gráficos interactivos de gastos.
+
+### Backend
+- **Node.js & Express**: Servidor robusto y escalable.
+- **MongoDB & Mongoose**: Persistencia de datos flexible y eficiente.
+- **Nodemailer**: Gestión de correos electrónicos de verificación.
+
+---
+
+## 📦 Instalación y Desarrollo
+
+### Requisitos Previos
+*   Node.js (v18 o superior)
+*   MongoDB
+
+### Configuración del Frontend
+1. Instala las dependencias:
+   ```bash
+   npm install
+   ```
+2. Inicia el servidor de desarrollo:
+   ```bash
+   npm run dev
+   ```
+
+### Configuración del Backend
+1. Navega al directorio del servidor:
+   ```bash
+   cd server
+   ```
+2. Instala las dependencias:
+   ```bash
+   npm install
+   ```
+3. Configura las variables de entorno en un archivo `.env`:
+   ```env
+   MONGO_URI=tu_mongodb_uri
+   PORT=5000
+   GMAIL_USER=tu_correo@gmail.com
+   GMAIL_PASS=tu_app_password
+   ```
+4. Inicia el servidor del backend:
+   ```bash
+   npm run dev
+   ```
+
+---
+
+## 🎨 Diseño Visual
+
+El proyecto prioriza una estética moderna con:
+- **Colores Emerald & Slate**: Para un look limpio y profesional.
+- **Micro-animaciones**: Mejorando la interactividad.
+- **Diseño Mobile-First**: Optimizado para dispositivos móviles, donde más se usa al comprar.
+
+---
+
+<div align="center">
+  <p>Desarrollado con pasión para hacer tu vida más fácil. 🚀</p>
+</div>
